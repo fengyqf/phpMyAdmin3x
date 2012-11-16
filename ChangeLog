@@ -1,6 +1,16 @@
 phpMyAdmin - ChangeLog
 ======================
 
+3.5.4.0 (2012-11-16))
+- bug #3570212 [edit] uuid_short() is a no-arguments function
+- bug #3569577 [edit] Add routine parameter headers not valid for "function" 
+- bug #3575799 [search] Various search operators not working as expected
+- bug #3576322 [search] Invalid select query generated for tables with ENUM fields
+- bug #3577468 [display] Incorrect imagejpeg Syntax Breaks Image Transformation
+- bug #3578776 [search] Editing SQL not possible when no records found
+- bug #3571970 [interface] Display chart and number of rows to plot
+- bug #3582631 [core] Wrong redirect url caused cookies error with ForceSSL
+
 3.5.3.0 (2012-10-08)
 - bug #3539044 [interface] Browse mode "Show" button gives blank page if no results anymore
 - bug #3534979 [interface] Copy Database Ajax feedback vanishes long before copying is done
