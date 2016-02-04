@@ -17,7 +17,7 @@ $cfg['Servers'][$i]['socket'] = '';
 $cfg['Servers'][$i]['connect_type'] = 'tcp';
 $cfg['Servers'][$i]['extension'] = 'mysqli';
 $cfg['Servers'][$i]['auth_type'] = 'cookie';
-$cfg['Servers'][$i]['user'] = 'root';
+$cfg['Servers'][$i]['user'] = '';
 $cfg['Servers'][$i]['password'] = '';
 $cfg['Servers'][$i]['compress'] = true;
 $cfg['Servers'][$i]['pmadb'] = 'phpmyadmin';
@@ -56,7 +56,13 @@ $cfg['ShowPhpInfo'] = true;
 $cfg['blowfish_secret'] = 'fsctoken';
 
 
-/* Addition config */
+/* ./config_patch.inc.php
+ *   Addition config, to improve the config items, such as below
+
+$cfg['Servers'][1]['auth_type'] = 'config';
+$cfg['Servers'][1]['user'] = 'root';
+$cfg['Servers'][1]['password'] = 'you-password';
+*/
 include('./config_patch.inc.php');
 
 ?>
