@@ -585,7 +585,7 @@ do {
         // triggers can modify already imported tables)
         if ($GLOBALS[$what . '_structure_or_data'] == 'structure' || $GLOBALS[$what . '_structure_or_data'] == 'structure_and_data') {
             if (!PMA_exportStructure($db, $table, $crlf, $err_url, $do_relation, $do_comments, $do_mime, $do_dates, 'triggers', $export_type)) {
-                break 2;
+                break;
             }
         }
         if (!PMA_exportDBFooter($db)) {
