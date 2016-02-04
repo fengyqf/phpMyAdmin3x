@@ -1646,6 +1646,13 @@ function PMA_localisedDate($timestamp = -1, $format = '')
     if ($format == '') {
         /* l10n: See http://www.php.net/manual/en/function.strftime.php */
         $format = __('%B %d, %Y at %I:%M %p');
+        //patch for win
+        $fs_ver=explode('.',PHP_VERSION);
+        if( $fs_ver[0] > 5 or ($fs_ver[0] = 5 && $fs_ver[1] >= 4) ){
+            if(strtoupper(substr(PHP_OS, 0, 3)) === 'WIN'){
+                $format = '%Y-%m-%d %H:%M:%S';
+            }
+        }
     }
 
     if ($timestamp == -1) {
