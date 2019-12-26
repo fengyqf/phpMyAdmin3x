@@ -32,6 +32,13 @@
  */
 
 /**
+ * block attempts to directly run this script 
+ */
+if (getcwd() == dirname(__FILE__)) {
+    die('Attack stopped');
+}
+
+/**
  * Minimum PHP version; can't call PMA_fatalError() which uses a
  * PHP 5 function, so cannot easily localize this message.
  */
@@ -45,6 +52,11 @@ if (version_compare(PHP_VERSION, '5.2.0', 'lt')) {
 if (!defined('E_DEPRECATED')) {
     define('E_DEPRECATED', 8192);
 }
+
+/**
+ * for verification in all procedural scripts under libraries
+ */
+define('PHPMYADMIN', true);
 
 /**
  * the error handler
@@ -78,11 +90,6 @@ if (version_compare(phpversion(), '5.4', 'lt')) {
      */
     @ini_set('magic_quotes_runtime', false);
 }
-
-/**
- * for verification in all procedural scripts under libraries
- */
-define('PHPMYADMIN', true);
 
 /**
  * core functions
@@ -578,7 +585,7 @@ $_REQUEST['js_frame'] = PMA_ifSetOr($_REQUEST['js_frame'], '');
  * @global array $js_include
  */
 $GLOBALS['js_include'] = array();
-$GLOBALS['js_include'][] = 'jquery/jquery-1.6.2.js';
+$GLOBALS['js_include'][] = 'jquery/jquery-1.6.2+fix-9521.js';
 $GLOBALS['js_include'][] = 'jquery/jquery-ui-1.8.16.custom.js';
 $GLOBALS['js_include'][] = 'update-location.js';
 
