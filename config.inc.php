@@ -57,14 +57,25 @@ $cfg['ShowPhpInfo'] = true;
 $cfg['blowfish_secret'] = 'fsctoken';
 $cfg['Export']['sql_procedure_function'] = false;
 
+/*  ** put your addition configure into  ./config_patch.inc.php, such as:
 
-/* ./config_patch.inc.php
- *   Addition config, to improve the config items, such as below
+ *   user/password for the default mysql-server
 
 $cfg['Servers'][1]['auth_type'] = 'config';
 $cfg['Servers'][1]['user'] = 'root';
 $cfg['Servers'][1]['password'] = 'you-password';
+
+
+ *   And some more mysql-server configure
+$i++;
+$cfg['Servers'][$i]['verbose'] = 'the-2nd-server';
+$cfg['Servers'][$i]['host'] = '10.0.0.123';
+...
+
+ *   And other configure as your mind
+
 */
+
 include('./config_patch.inc.php');
 
 ?>
