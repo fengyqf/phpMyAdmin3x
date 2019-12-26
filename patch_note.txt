@@ -1,0 +1,24 @@
+# changed file note
+
+
+libraries/common.lib.php
+
+# fixed date format display for some winnt environment
+@1649 ++
+        //patch for win
+        $fs_ver=explode('.',PHP_VERSION);
+        if( $fs_ver[0] > 5 or ($fs_ver[0] = 5 && $fs_ver[1] >= 4) ){
+            if(strtoupper(substr(PHP_OS, 0, 3)) === 'WIN'){
+                $format = '%Y-%m-%d %H:%M:%S';
+            }
+        }
+
+
+# display indexes in table struct page
+@2701 +-
+<div id="<?php echo $id; ?>" <?php echo $GLOBALS['cfg']['InitialSlidersState'] == 'closed' && $id != 'indexes' ? ' style="display: none; overflow:auto;"' : ''; ?> class="pma_auto_slider" title="<?php echo htmlspecialchars($message); ?>">
+
+
+
+
+
