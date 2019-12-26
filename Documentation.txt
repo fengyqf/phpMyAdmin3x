@@ -1,4 +1,4 @@
-phpMyAdmin 3.5.8.1 Documentation
+phpMyAdmin 3.5.8.2 Documentation
 
   * Top
   * Requirements
@@ -88,7 +88,7 @@ password are passed directly to MySQL. phpMyAdmin does no account management on
 its own (other than allowing one to manipulate the MySQL user account
 information); all users must be valid MySQL users.
 
-^1) phpMyAdmin can compress (Zip, GZip -RFC 1952- or Bzip2 formats) dumps and
+^1) phpMyAdmin can compress (Zip, GZip -RFC 1952- or Bzip2 formats) dumps and 
 CSV exports if you use PHP with Zlib support (--with-zlib) and/or Bzip2 support
 (--with-bz2). Proper support may also need changes in php.ini.
 
@@ -206,7 +206,7 @@ Quick Install
     multi?user sub?section of this FAQ for additional information, especially
     FAQ 4.4.
  6. Open the main phpMyAdmin directory in your browser. phpMyAdmin should now
-    display a welcome screen and your databases, or a login dialog if using
+    display a welcome screen and your databases, or a login dialog if using 
     HTTP or cookie authentication mode.
  7. You should deny access to the ./libraries and ./setup/lib subfolders in
     your webserver configuration. For Apache you can use supplied .htaccess
@@ -334,7 +334,7 @@ Using authentication modes
 
   * Uses HTTP Basic authentication method and allows you to log in as any valid
     MySQL user.
-  * Is supported with most PHP configurations. For IIS (ISAPI) support using
+  * Is supported with most PHP configurations. For IIS (ISAPI) support using 
     CGI PHP see FAQ 1.32, for using with Apache CGI see FAQ 1.35.
   * See also FAQ 4.4 about not using the .htaccess mechanism along with 'HTTP'
     authentication mode.
@@ -1329,8 +1329,8 @@ $cfg['CheckConfigurationPermissions'] boolean
     set this parameter to FALSE. Default is TRUE.
 $cfg['LinkLengthLimit'] integer
     Limit for length of URL in links. When length would be above this limit, it
-    is replaced by form with button. This is required as some web servers (
-    IIS) have problems with long URLs. Default is 1000.
+    is replaced by form with button. This is required as some web servers ( IIS
+    ) have problems with long URLs. Default is 1000.
 $cfg['DisableMultiTableMaintenance'] boolean
     In the database Structure page, it's possible to mark some tables then
     choose an operation like optimizing for many tables. This can slow down a
@@ -1383,7 +1383,7 @@ $cfg['TextareaCols'] integer
     $cfg['CharTextareaCols'] integer
     $cfg['CharTextareaRows'] integer
     Number of columns and rows for the textareas.
-    This value will be emphasized (*2) for SQL query textareas and (*1.25) for
+    This value will be emphasized (*2) for SQL query textareas and (*1.25) for 
     SQL textareas inside the query window.
     The Char* values are used for CHAR and VARCHAR editing (if configured via
     $cfg['CharEditing']).
@@ -1932,7 +1932,7 @@ support groups.
 
 1.3 (withdrawn).
 
-1.4 Using phpMyAdmin on IIS, I'm displayed the error message: "The specified
+1.4 Using phpMyAdmin on IIS, I'm displayed the error message: "The specified 
 CGI application misbehaved by not returning a complete set of HTTP headers
 ...".
 
@@ -2337,8 +2337,8 @@ sent by ..." is displayed, what's the problem?
 
 Edit your config.inc.php file and ensure there is nothing (I.E. no blank lines,
 no spaces, no characters...) neither before the <?php tag at the beginning,
-neither after the ?> tag at the end. We also got a report from a user under
-IIS, that used a zipped distribution kit: the file libraries/Config.class.php
+neither after the ?> tag at the end. We also got a report from a user under IIS
+, that used a zipped distribution kit: the file libraries/Config.class.php
 contained an end-of-line character (hex 0A) at the end; removing this character
 cleared his errors.
 
@@ -2409,7 +2409,7 @@ Erik Wasser explains: The solution is: if your host is "localhost" MySQL (the
 command line tool mysql as well) always tries to use the socket connection for
 speeding up things. And that doesn't work in this configuration with port
 forwarding.
-If you enter "127.0.0.1" as hostname, everything is right and MySQL uses the
+If you enter "127.0.0.1" as hostname, everything is right and MySQL uses the 
 TCP connection.
 
 2.7 Using and creating themes
@@ -2633,7 +2633,7 @@ This depends on your system.
 If you're running a server which cannot be accessed by other people, it's
 sufficient to use the directory protection bundled with your webserver (with
 Apache you can use .htaccess files, for example).
-If other people have telnet access to your server, you should use phpMyAdmin's
+If other people have telnet access to your server, you should use phpMyAdmin's 
 HTTP or cookie authentication features.
 
 Suggestions:
@@ -2745,7 +2745,7 @@ Upgrade to at least Internet Explorer 5.5 SP2.
 found") when trying to modify a row in a table with many columns, or with a
 text column
 
-Your table neither have a primary key nor an unique one, so we must use a long
+Your table neither have a primary key nor an unique one, so we must use a long 
 URL to identify this row. There is a limit on the length of the URL in those
 browsers, and this not happen in Netscape, for example. The workaround is to
 create a primary or unique key, or use another browser.
@@ -2805,7 +2805,7 @@ cannot make phpMyAdmin work under Windows.
 
 Please check the following points:
 
-  * Maybe you have defined your PmaAbsoluteUri setting in config.inc.php to an
+  * Maybe you have defined your PmaAbsoluteUri setting in config.inc.php to an 
     IP address and you are starting phpMyAdmin with a URL containing a domain
     name, or the reverse situation.
   * Security settings in IE and/or Microsoft Security Center are too high, thus

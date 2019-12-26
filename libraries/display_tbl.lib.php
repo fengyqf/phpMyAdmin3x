@@ -6,6 +6,10 @@
  * @package PhpMyAdmin
  */
 
+if (! defined('PHPMYADMIN')) {
+    exit;
+}
+
 /**
  *
  */
@@ -2362,7 +2366,7 @@ function PMA_displayTable(&$dt_result, &$the_disp_mode, $analyzed_sql)
         }
 
         $message = PMA_Message::success(__('Showing rows'));
-        $message->addMessage($first_shown_rec);
+        $message->addMessage(htmlspecialchars($first_shown_rec));
         if ($message_view_warning) {
             $message->addMessage('...', ' - ');
             $message->addMessage($message_view_warning);
