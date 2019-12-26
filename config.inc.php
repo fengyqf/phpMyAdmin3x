@@ -36,7 +36,8 @@ $cfg['Servers'][$i]['recent'] = 'pma_recent';
 $cfg['Servers'][$i]['table_uiprefs'] = 'pma_table_uiprefs';
 $cfg['Servers'][$i]['tracking'] = 'pma_tracking';
 $cfg['Servers'][$i]['MaxTableUiprefs'] = 1000;
-$cfg['Servers'][$i]['tracking_version_auto_create'] = true;
+$cfg['Servers'][$i]['tracking_version_auto_create'] = false;
+
 
 /* End of servers configuration */
 
@@ -54,6 +55,7 @@ $cfg['ExecTimeLimit'] = 0;
 $cfg['PropertiesIconic'] = true;
 $cfg['ShowPhpInfo'] = true;
 $cfg['blowfish_secret'] = 'fsctoken';
+$cfg['Export']['sql_procedure_function'] = false;
 
 
 /* ./config_patch.inc.php
