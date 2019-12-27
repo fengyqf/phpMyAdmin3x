@@ -1,6 +1,137 @@
 phpMyAdmin - ChangeLog
 ======================
 
+3.5.8.2 (2013-07-28)
+- [security] Fix self-XSS in "Showing rows", see PMASA-2013-8
+- [security] Fix self-XSS in Display chart, see PMASA-2013-9
+- [security] Fix stored XSS in Server status monitor, see PMASA-2013-9
+- [security] Fix stored XSS in navigation panel logo link, see PMASA-2013-9
+- [security] Fix self-XSS in setup, trusted proxies validation, see PMASA-2013-9
++ [security] JSON content type header for version_check.php, see PMASA-2013-9
++ [security] Backport fix for jQuery issue #9521 from jQuery 1.6.3, see PMASA-2013-9
++ [security] Fix full path disclosure, see PMASA-2013-12
++ [security] Fix control user SQL injection in pmd_pdf.php, see PMASA-2013-15
++ [security] Fix control user SQL injection in schema_export.php, see PMASA-2013-15
+- [security] Fix self-XSS in schema export, see PMASA-2013-14
+- [security] Fix unencoded json object, see PMASA-2013-11
+
+3.5.8.1 (2013-04-24)
+- [security] Remote code execution (preg_replace), reported by Janek Vind
+  (see PMASA-2013-2)
+- [security] Locally Saved SQL Dump File Multiple File Extension Remote Code
+  Execution, reported by Janek Vind (see PMASA-2013-3)
+
+3.5.8.0 (2013-04-08)
+- bug #3828 MariaDB reported as MySQL
+- bug #3854 Incorrect header for Safari 6.0
+- bug #3705 Attempt to open trigger for edit gives NULL
+- Use HTML5 DOCTYPE 
+- [security] Self-XSS on GIS visualisation page, reported by Janek Vind
+- bug #3800 Incorrect keyhandler behaviour #2
+
+3.5.7.0 (2013-02-15)
+- bug #3779 [core] Problem with backslash in enum fields
+- bug #3816 Missing server_processlist.php
+- bug #3821 Safari: white page
+- Correct detection of the Chrome browser
+
+3.5.6.0 (2013-01-28)
+- bug #3593604 [status] Erroneous advisor rule
+- bug #3596070 [status] localStorage broken in server status monitor
+- bug #3598736 [routines] Editing a procedure with special characters
+- bug #3600322 [core] Visualize GIS data throws Fatal Error
+- bug #3599362 [core] Double-escaped error message
+- bug #3776 [cookies] Login without auth on second server
+
+3.5.5.0 (2012-12-21)
+- bug #3563824 [export] Support Apache's mod_deflate
+- bug #3585523 [interface] Inline query editing broken after row update
+- bug #3586389 [setup] Cannot switch language in /setup
+- bug #3585695 [CSS] Font size in inline query editor is way too big
+- bug #3588354 [l10n] Portuguese Language not displaying correctly
+- bug #3591412 [status] Live charts don't work for non-default server
+- bug [core] Proxy ajax calls to pma.net to avoid browser notices
+- bug #3593534 [tracking] Structure Snapshot on tracked view renders invalid
+SQL
+- bug #3544366 [events] Event comments not saved
+
+3.5.4.0 (2012-11-16)
+- bug #3570212 [edit] uuid_short() is a no-arguments function
+- bug #3569577 [edit] Add routine parameter headers not valid for "function"
+- bug #3575799 [search] Various search operators not working as expected
+- bug #3576322 [search] Invalid select query generated for tables with ENUM fields
+- bug #3577468 [display] Incorrect imagejpeg Syntax Breaks Image Transformation
+- bug #3578776 [search] Editing SQL not possible when no records found
+- bug #3571970 [interface] Display chart and number of rows to plot
+- bug #3582631 [core] Wrong redirect url caused cookies error with ForceSSL
+
+3.5.3.0 (2012-10-08)
+- bug #3539044 [interface] Browse mode "Show" button gives blank page if no results anymore
+- bug #3534979 [interface] Copy Database Ajax feedback vanishes long before copying is done
+- bug #3527531 [interface] GC-maxlifetime warning incorrectly displayed
+- bug #3526916 [interface] Search fails with JS error when tooltips disabled
+- bug #3544366 [interface] Event comments not saved
+- bug #3549084 [edit] Can't enter date directly when editing inline
+- bug #3548491 [interface] Inline query editor doesn't work from search results
+- bug #3547825 [edit] BLOB download no longer works
+- bug #3541966 [config] Error in generated configuration arrray
+- bug #3553551 [GUI] Invalid HTML code in multi submits confirmation form
+- [interface] Designer sometimes places tables on the top menu
+- bug #3546277 [core] Call to undefined function __() when config file has wrong permissions
+- bug #3540922 [edit] Error searching table with many fields
+- bug #3555104 [edit] Cannot copy a DB with table & views
+- bug #3559925 [privileges] Incorrect updating of the list of users
+- bug #3561224 [edit] cell edit date field with empty date fills in current date
+- bug #3559955 [edit] current_date from function drop down fails on update
+- bug #3562472 add support for Solaris and FreeBSD system load and memory display in server status
+- bug #3553068 [import] Table import from XML file fails
+- replace Highcharts with jqplot for Display chart
+- bug #3567684 [edit] Pasting value doesn't clear null checkbox
+- bug #3570786 [edit] Datepicker for date and datetime fields is broken
+
+3.5.2.2 (2012-08-12)
+- [security] Fixed XSS vulnerabilities, see PMASA-2012-4
+
+3.5.2.1 (2012-08-03)
+- [security] Fixed local path disclosure vulnerability, see PMASA-2012-3
+
+3.5.2.0 (2012-07-07)
+- bug #3521416 [interface] JS error when editing index
+- bug #3521313 [core] Call to undefined function __()
+- bug #3521016 [edit] NOW() function incorrectly selected
+- bug [GUI] Invalid HTML code on transformation_overview.php
+- bug #3522930 [browse] Missing validation in Ajax mode
+- bug Fix popup message on build SQL of import
+- bug #3523499 [core] Make X-WebKit-CSP work better
+- replace Highcharts with jqplot for query profiling, zoom search
+- bug #3531584 [interface] No form validation in change password dialog
+- bug #3531585 [interface] Broken password validation in copy user form
+- bug #3531586 [unterface] Add user form prints JSON when user presses enter
+- bug #3534121 [config] duplicate line in config.sample.inc.php
+- bug #3534311 [interface] Grid editing incorrectly parses ENUM/SET values
+- bug #3510196 [core] More clever URL rewriting with ForceSSL
+
+3.5.1.0 (2012-05-03)
+- bug #3510784 [edit] Limit clause ignored when sort order is remembered
+- bug #3511471 [interface] View name not seen in navi panel (MySQL 5.1)
+- bug #3512916 [display] Right frame reloads after displaying SQL result(zero rows)
+- bug [interface] Fixed missing Codemirror for inline query edit when exporting a result set
+- bug #3514490 [auth] Multiple Navigation panels bug still present
+- bug #3515181 [users] Error in create user + underscore + create database
+- bug #3515666 [display] Profiling chart shows wrong data
+- bug #3516037 [auth] JS includes missing in auth config error page
+- bug #3516183 [display] Missing image extension
+- bug [display] Added missing icons in original theme
+- bug #3516761 [edit] Query error after search
+- bug #3516405 [display] Chart title is getting wrong within chart export
+- bug #3517021 [interface] Header links except 'More' hide after closing dialog
+- bug #3516817 [interface] "More" actions in table structure
+- bug #3518484 [privileges] PMA_sqlAddSlashes() does not quote the table names correctly
+- bug #3518983 [designer] Error messages do not appear in the Designer
+- bug #3519747 [interface] Suhosin patch warning incorrectly displayed
+- bug #3520107 [interface] Server status page: Incorrect dialog box titles
+- bug #3516089 [structure] DROP does not work on defective VIEWs
+
 3.5.0.0 (2012-04-07)
 + rfe #2021981 [interface] Add support for mass prefix change.
 + "up to date" message on main page when current version is up to date
@@ -70,13 +201,16 @@ phpMyAdmin - ChangeLog
 + patch #3303195 [interface] Checkbox to have SQL input remain
 - patch #3472899 [export] Fixed CSV escape for the export
 - patch #3475424 [import] Fixed CSV escape for the import
-- bug #3482734 [interface] No warning on syntax error in search form 
+- bug #3482734 [interface] No warning on syntax error in search form
 - bug #3423717 [core] Improved detection of SSL connection
 + FULLTEXT support for InnoDB, starting with MySQL 5.6.4
 - bug #3497151 [interface] Duplicate inline query edit box
-- bug #3504567 [mime] Description of the transformation missing in the tooltip 
+- bug #3504567 [mime] Description of the transformation missing in the tooltip
 
-3.4.11.0 (not yet released)
+3.4.11.1 (2012-08-12)
+- [security] Fixed XSS vulnerabilities, see PMASA-2012-4
+
+3.4.11.0 (2012-04-14)
 - bug #3486970 [import] Exception on XML import
 - bug #3488777 [navi] $cfg['ShowTooltipAliasTB'] and blank names in navigation
 
@@ -157,7 +291,7 @@ phpMyAdmin - ChangeLog
 - bug #3403165 [interface] Collation not displayed for long enum fields
 - bug #3399951 [export] Config for export compression not used
 - bug #3400690 [privileges] DB-specific privileges won't submit
-- bug #3410604 [config] Configuration storage incorrect suggested table name 
+- bug #3410604 [config] Configuration storage incorrect suggested table name
 - bug #3383572 [interface] Cannot execute saved query
 - bug #3411535 [display] Full text button unchecks results display options
 - bug #3411224 [display] Broken binary column when 'Show binary contents' is not set
@@ -184,7 +318,7 @@ phpMyAdmin - ChangeLog
 - [import] Remove native Excel import modules (xls and xlsx formats)
 - bug #3392920 [edit] BLOB emptied after editing another column
 - [security] Fixed XSS in Inline Edit on save action, see PMASA-2011-14
-- [security] Fixed XSS with db/table/column names, see PMASA-2011-14 
+- [security] Fixed XSS with db/table/column names, see PMASA-2011-14
 
 3.4.4.0 (2011-08-24)
 - bug #3323060 [parser] SQL parser breaks AJAX requests if query has unclosed quotes
@@ -258,8 +392,8 @@ phpMyAdmin - ChangeLog
 - [security] Make redirector require valid token
 
 3.4.0.0 (2011-05-11)
-+ rfe #2890226 [view] Enable VIEW rename 
-+ rfe #838637 [privileges] Export a user's privileges 
++ rfe #2890226 [view] Enable VIEW rename
++ rfe #838637 [privileges] Export a user's privileges
 - [core] Updated mootools to fix some glitches with Safari.
 + rfe #2816943 [interface] Add REGEXP ^...$ to select dialog.
 + rfe #2924956 [interface] Add insert ignore option to editing row.
@@ -278,7 +412,7 @@ phpMyAdmin - ChangeLog
 + rfe #1186511 [inrerface] Add link to reload navigation frame.
 + rfe #2936156 [auth] Signon authentication forwards error message through session data.
 + rfe #2835109 [interface] Move ^1 to the end of message.
-+ rfe #854911  [interface] Grey out non applicable actions in structure 
++ rfe #854911  [interface] Grey out non applicable actions in structure
 + [interface] Allow to create new table from navigation frame (in light mode).
 + rfe #1025696 [browse] Add direct download of binary fields.
 - [browse] Properly display NULL value for BLOB.
@@ -297,13 +431,13 @@ phpMyAdmin - ChangeLog
 + patch #2948421 [auth] HTTP Basic auth realm name,
   thanks to Harald Jenny - haraldj
 - bug #2954916 [interface] Do not insert doc links to not formatted SQL.
-+ [lang] Chinese Simplified update, thanks to Shanyan Baishui - rimyxp 
++ [lang] Chinese Simplified update, thanks to Shanyan Baishui - rimyxp
 + [lang] Turkish update, thanks to Burak Yavuz
 + rfe #2963310 [interface] Focus TEXTAREA "sql_query" on click on "SQL" link
 + [lang] Uzbek update, thanks to Orzu Samarqandiy
 + rfe #2958013 [import] After import, also list uploaded filename, thanks
   to Pavel Konnikov and Herman van Rink
-+ patch #2974341 [structure] Clicking on table name in db Structure should 
++ patch #2974341 [structure] Clicking on table name in db Structure should
   Browse the table if possible, thanks to bhdouglass - dougboybhd
 + patch #2975533 [search] New search operators, thanks to
   Martynas Mickevičius
@@ -312,7 +446,7 @@ phpMyAdmin - ChangeLog
 - [core] Provide way for vendors to easily change paths to config files.
 + patch #2979922, rfe #2804874 [interface] Add inline query editing, thanks to Muhammd Adnan.
 - bug #2966752 [setup] Allow to configure changes tracking in setup script.
-+ patch #2981165 [edit] Optionally disable the Type column, 
++ patch #2981165 [edit] Optionally disable the Type column,
   thanks to Brian Douglass - bhdouglass
 + patch #2984058 [edit] Buttons for quicky creating common SQL queries, thanks
   to sutharshan.
@@ -329,14 +463,14 @@ phpMyAdmin - ChangeLog
 + rfe #2964518 [interface] Allow to choose servers from configuration for
   synchronisation.
 + rfe #2988633 [relation] Improve ON DELETE/ON UPDATE drop-downs
-+ rfe #2988629 [relation] Improve labels in relation view 
++ rfe #2988629 [relation] Improve labels in relation view
 + rfe #2983207, patch #2988715 [interface] Use jQuery calendar dialog, thanks
   to Muhammad Adnan.
 + [doc] Incorporate synchronisation docs into main document.
 + [core] Include Content Security Policy HTTP headers.
 - bug #3004216 [CSS] Field attributes use inline CSS
 - patch #2999595, rfe #2998130 [interface] Cleanup navigation frame.
-- patch #3025161 [core] Prevent sending of unnecessary cookies, 
+- patch #3025161 [core] Prevent sending of unnecessary cookies,
   thanks to Piotr Przybylski  - crackpl
 - bug [password] Generate password only available if JS is enabled
   (fixed for Privileges and Change password)
@@ -355,7 +489,7 @@ phpMyAdmin - ChangeLog
 - [interface] Fixed rendering of error/notice/info titles background.
 - patch #3038293 [doc] Language and grammar fixes,
   thanks to Isaac Bennetch - ibennetch
-- patch #3038312 [export] JSON export, 
+- patch #3038312 [export] JSON export,
   thanks to Hauke Henningsen - blubberkeks152
 - rfe #1494550 [interface] Editor for SET/ENUM fields.
 - rfe #2649375 [interface] Simplified interface to backup/restore.
@@ -363,10 +497,10 @@ phpMyAdmin - ChangeLog
 - [relations] Dropped WYSIWYG-PDF configuration variable.
 - rfe #806035, #686260 [relations] Export relations to Dia, SVG and others
 + [interface] Added charts to status tab, profiling page and query results
-+ [interface] AJAXification on various pages 
++ [interface] AJAXification on various pages
 - [core] Remove last remaining parts of profiling code which was removed in 2006.
 - bug #3042665 [parser] Add workaround for MySQL way of handling backtick.
-- bug #3056610 [interface] Removed modification options for information_schema 
+- bug #3056610 [interface] Removed modification options for information_schema
 + patch #3055886 [config] Add Left frame table filter visibility config option, thanks to eesau
 - [core] Force generating of new session on login
 + rfe #1105678 [interface] Drop page-break-before as it is useless for smaller
@@ -381,7 +515,7 @@ phpMyAdmin - ChangeLog
   thanks to garas - garas
 - bug #3123433 [interface] Avoid double escaping of MySQL errors.
 - [interface] Use less noisy message and remove disable link on server charts and database statistics.
-+ rfe #3141330 [relation] When displaying results, show a link to the foreign 
++ rfe #3141330 [relation] When displaying results, show a link to the foreign
   table even when phpMyAdmin configuration storage is not active
 - bug #3141327 [relation] Foreign key input options
 - [export] Better handling of export to PHP array.
@@ -421,8 +555,8 @@ phpMyAdmin - ChangeLog
 - patch #3147400 [structure] Aria table size printed as unknown,
   thanks to erickoh75 - erickoh75
 - patch #3150164 [structure] Ordering by size gives incorrect results,
-  thanks to Madhura Jayaratne - madhuracj 
-- bug #3153409 [core] 0 row(s) affected 
+  thanks to Madhura Jayaratne - madhuracj
+- bug #3153409 [core] 0 row(s) affected
 - bug #3155842 [core] Edit relational page and page number
 - [security] Minor security fixes, see PMASA-2010-9 and PMASA-2010-10
 - [lang] German update, thanks to to jannicars@users.sourceforge.net.
