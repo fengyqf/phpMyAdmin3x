@@ -18,7 +18,7 @@ require_once './libraries/common.inc.php';
 $GLOBALS['js_include'][] = 'openlayers/OpenLayers.js';
 $GLOBALS['js_include'][] = 'jquery/jquery.svg.js';
 $GLOBALS['js_include'][] = 'jquery/jquery.mousewheel.js';
-$GLOBALS['js_include'][] = 'jquery/jquery.event.drag-2.0.min.js';
+$GLOBALS['js_include'][] = 'jquery/jquery.event.drag-2.0.js';
 $GLOBALS['js_include'][] = 'tbl_gis_visualization.js';
 $GLOBALS['js_include'][] = 'OpenStreetMap.js';
 
@@ -110,7 +110,7 @@ $visualization = PMA_GIS_visualizationResults($data, $visualizationSettings, $fo
 <?php echo PMA_generate_common_hidden_inputs($url_params); ?>
 <fieldset>
     <legend><?php echo __('Display GIS Visualization'); ?></legend>
-    <div id="placeholder" style="width:<?php echo($visualizationSettings['width']); ?>px;height:<?php echo($visualizationSettings['height']); ?>px;">
+    <div id="placeholder" style="width:<?php echo htmlspecialchars($visualizationSettings['width']); ?>px;height:<?php echo htmlspecialchars($visualizationSettings['height']); ?>px;">
         <?php echo $visualization; ?>
     </div>
     <div id="openlayersmap"></div>

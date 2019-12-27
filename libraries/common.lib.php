@@ -441,21 +441,17 @@ function PMA_showMySQLDocu($chapter, $link, $big_icon = false, $anchor = '', $ju
         if (empty($link)) {
             $link = 'index';
         }
-        $mysql = '5.0';
+        $mysql = '5.5';
         $lang = 'en';
         if (defined('PMA_MYSQL_INT_VERSION')) {
-            if (PMA_MYSQL_INT_VERSION >= 50500) {
+            if (PMA_MYSQL_INT_VERSION >= 50600) {
+                $mysql = '5.6';
+            } else if (PMA_MYSQL_INT_VERSION >= 50500) {
                 $mysql = '5.5';
-                /* l10n: Please check that translation actually exists. */
-                $lang = _pgettext('MySQL 5.5 documentation language', 'en');
             } else if (PMA_MYSQL_INT_VERSION >= 50100) {
                 $mysql = '5.1';
-                /* l10n: Please check that translation actually exists. */
-                $lang = _pgettext('MySQL 5.1 documentation language', 'en');
             } else {
                 $mysql = '5.0';
-                /* l10n: Please check that translation actually exists. */
-                $lang = _pgettext('MySQL 5.0 documentation language', 'en');
             }
         }
         $url = $cfg['MySQLManualBase'] . '/' . $mysql . '/' . $lang . '/' . $link . '.html';
@@ -829,6 +825,7 @@ function PMA_getTableList($db, $tables = null, $limit_offset = 0, $limit_count =
         if ($GLOBALS['cfg']['ShowTooltipAliasTB']
             && $GLOBALS['cfg']['ShowTooltipAliasTB'] !== 'nested'
             && $table['Comment'] // do not switch if the comment is empty
+            && $table['Comment'] != 'VIEW' // happens in MySQL 5.1
         ) {
             // switch tooltip and name
             $table['disp_name'] = $table['Comment'];
@@ -1087,6 +1084,7 @@ function PMA_showMessage($message, $sql_query = null, $type = 'notice', $is_view
             ) {
                 $query_base = $analyzed_display_query[0]['section_before_limit']
                     . "\n" . $GLOBALS['sql_order_to_append']
+                    . $analyzed_display_query[0]['limit_clause'] . ' '
                     . $analyzed_display_query[0]['section_after_limit'];
 
                 // Need to reparse query
@@ -2936,57 +2934,7 @@ function PMA_extractFieldSpec($fieldspec)
 
     if ('enum' == $type || 'set' == $type) {
         // Define our working vars
-        $enum_set_values = array();
-        $working = "";
-        $in_string = false;
-        $index = 0;
-
-        // While there is another character to process
-        while (isset($fieldspec[$index])) {
-            // Grab the char to look at
-            $char = $fieldspec[$index];
-
-            // If it is a single quote, needs to be handled specially
-            if ($char == "'") {
-                // If we are not currently in a string, begin one
-                if (! $in_string) {
-                    $in_string = true;
-                    $working = "";
-                } else {
-                    // Otherwise, it may be either an end of a string,
-                    // or a 'double quote' which can be handled as-is
-                    // Check out the next character (if possible)
-                    $has_next = isset($fieldspec[$index + 1]);
-                    $next = $has_next ? $fieldspec[$index + 1] : null;
-
-                    //If we have reached the end of our 'working' string (because
-                    //there are no more chars,or the next char is not another quote)
-                    if (! $has_next || $next != "'") {
-                        $enum_set_values[] = $working;
-                        $in_string = false;
-
-                    } elseif ($next == "'") {
-                        // Otherwise, this is a 'double quote',
-                        // and can be added to the working string
-                        $working .= "'";
-                        // Skip the next char; we already know what it is
-                        $index++;
-                    }
-                }
-            } elseif ('\\' == $char
-                && isset($fieldspec[$index + 1])
-                && "'" == $fieldspec[$index + 1]
-            ) {
-                // escaping of a quote?
-                $working .= "'";
-                $index++;
-            } else {
-                // Otherwise, add it to our working string like normal
-                $working .= $char;
-            }
-            // Increment character index
-            $index++;
-        } // end while
+        $enum_set_values = PMA_parseEnumSetValues($fieldspec, false);
         $printtype = $type . '(' .  str_replace("','", "', '", $spec_in_brackets) . ')';
         $binary = false;
         $unsigned = false;
@@ -3265,8 +3213,10 @@ function PMA_ajaxResponse($message, $success = true, $extra_data = array())
     // At this point, other headers might have been sent;
     // even if $GLOBALS['is_header_sent'] is true,
     // we have to send these additional headers.
-    header('Cache-Control: no-cache');
-    header("Content-Type: application/json");
+    if (!defined('TESTSUITE')) {
+        header('Cache-Control: no-cache');
+        header("Content-Type: application/json");
+    }
 
     echo json_encode($response);
 
@@ -3643,6 +3593,7 @@ function PMA_getFunctionsForField($field, $insert_mode)
         && empty($field['Default'])
         && empty($data)
         && ! isset($analyzed_sql[0]['create_table_fields'][$field['Field']]['on_update_current_timestamp'])
+        && $analyzed_sql[0]['create_table_fields'][$field['Field']]['default_value'] != 'NULL'
     ) {
         $default_function = $cfg['DefaultFunctions']['first_timestamp'];
     }
@@ -3714,8 +3665,8 @@ function PMA_getFunctionsForField($field, $insert_mode)
  * @param string $priv The privilege to check
  * @param mixed  $db   null, to only check global privileges
  *                     string, db name where to also check for privileges
- * @param mixed  $tbl  null, to only check global privileges
- *                     string, db name where to also check for privileges
+ * @param mixed  $tbl  null, to only check global/db privileges
+ *                     string, table name where to also check for privileges
  *
  * @return bool
  */
@@ -3751,6 +3702,8 @@ function PMA_currentUserHasPrivilege($priv, $db = null, $tbl = null)
     // If a database name was provided and user does not have the
     // required global privilege, try database-wise permissions.
     if ($db !== null) {
+        // need to escape wildcards in db and table names, see bug #3518484
+        $db = str_replace(array('%', '_'), array('\%', '\_'), $db);
         $query .= " AND TABLE_SCHEMA='%s'";
         if (PMA_DBI_fetch_value(
             sprintf(
@@ -3772,6 +3725,8 @@ function PMA_currentUserHasPrivilege($priv, $db = null, $tbl = null)
     // If a table name was also provided and we still didn't
     // find any valid privileges, try table-wise privileges.
     if ($tbl !== null) {
+        // need to escape wildcards in db and table names, see bug #3518484
+        $tbl = str_replace(array('%', '_'), array('\%', '\_'), $tbl);
         $query .= " AND TABLE_NAME='%s'";
         if ($retval = PMA_DBI_fetch_value(
             sprintf(
@@ -3804,7 +3759,7 @@ function PMA_getServerType()
     $server_type = 'MySQL';
     if (PMA_DRIZZLE) {
         $server_type = 'Drizzle';
-    } else if (strpos(PMA_MYSQL_STR_VERSION, 'mariadb') !== false) {
+    } else if (stripos(PMA_MYSQL_STR_VERSION, 'mariadb') !== false) {
         $server_type = 'MariaDB';
     } else if (stripos(PMA_MYSQL_VERSION_COMMENT, 'percona') !== false) {
         $server_type = 'Percona Server';
@@ -3839,4 +3794,54 @@ function PMA_printButton()
     echo '<input type="button" id="print" value="' . __('Print') . '" />';
     echo '</p>';
 }
+
+/**
+ * Parses ENUM/SET values
+ *
+ * @param string $definition The definition of the column
+ *                           for which to parse the values
+ * @param bool   $escapeHtml Whether to escape html entitites
+ *
+ * @return array
+ */
+function PMA_parseEnumSetValues($definition, $escapeHtml = true)
+{
+    $values_string = htmlentities($definition);
+    // There is a JS port of the below parser in functions.js
+    // If you are fixing something here,
+    // you need to also update the JS port.
+    $values = array();
+    $in_string = false;
+    $buffer = '';
+    for ($i=0; $i<strlen($values_string); $i++) {
+        $curr = $values_string[$i];
+        $next = $i == strlen($values_string)-1 ? '' : $values_string[$i+1];
+        if (! $in_string && $curr == "'") {
+            $in_string = true;
+        } else if ($in_string && $curr == "\\" && $next == "\\") {
+            $buffer .= "&#92;";
+            $i++;
+        } else if ($in_string && $next == "'" && ($curr == "'" || $curr == "\\")) {
+            $buffer .= "&#39;";
+            $i++;
+        } else if ($in_string && $curr == "'") {
+            $in_string = false;
+            $values[] = $buffer;
+            $buffer = '';
+        } else if ($in_string) {
+             $buffer .= $curr;
+        }
+    }
+    if (strlen($buffer) > 0) {
+        // The leftovers in the buffer are the last value (if any)
+        $values[] = $buffer;
+    }
+    if (! $escapeHtml) {
+        foreach ($values as $key => $value) {
+            $values[$key] = html_entity_decode($value, ENT_QUOTES);
+        }
+    }
+    return $values;
+}
+
 ?>

@@ -29,7 +29,7 @@ $action_done = preg_replace('/[^a-z_]/', '', $action_done);
 // send no-cache headers
 require './libraries/header_http.inc.php';
 ?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
@@ -37,7 +37,7 @@ require './libraries/header_http.inc.php';
 <link href="../favicon.ico" rel="icon" type="image/x-icon" />
 <link href="../favicon.ico" rel="shortcut icon" type="image/x-icon" />
 <link href="styles.css" rel="stylesheet" type="text/css" />
-<script type="text/javascript" src="../js/jquery/jquery-1.6.2.js"></script>
+<script type="text/javascript" src="../js/jquery/jquery-1.6.2+fix-9521.js"></script>
 <script type="text/javascript" src="../js/jquery/jquery-ui-1.8.16.custom.js"></script>
 <script type="text/javascript" src="../js/jquery/jquery.json-2.2.js"></script>
 <script type="text/javascript" src="../js/config.js"></script>
