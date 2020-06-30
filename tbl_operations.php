@@ -364,7 +364,7 @@ if (strstr($show_comment, '; InnoDB free') === false) {
 
     <!-- Table comments -->
     <tr><td><?php echo __('Table comments'); ?></td>
-        <td><input type="text" name="comment" maxlength="60" size="30"
+        <td><input type="text" name="comment" maxlength="600" size="30"
                 value="<?php echo htmlspecialchars($comment); ?>" onfocus="this.select()" />
             <input type="hidden" name="prev_comment" value="<?php echo htmlspecialchars($comment); ?>" />
         </td>
