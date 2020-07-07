@@ -1342,7 +1342,7 @@ function PMA_syncDisplayDataCompare($rows)
             $p[0] = $row['btn_type'] . 'S' . $p[0];
             echo '<img class="icon struct_img" src="' . $pmaThemeImage . 'new_struct.png" width="16" height="16"
                  alt="Structure" title="' . __('Click to select') . '" style="cursor:pointer" onclick="showDetails('
-                 . "'" . implode($p, "','") . "'"
+                 . "'" . implode("','", $p) . "'"
                  . ', this, ' . "'" . PMA_escapeJsString(htmlspecialchars($row['src_table_name'])) . "'" . ')" /> ';
         }
         if (isset($row['btn_data']) && $row['btn_data']) {
@@ -1351,7 +1351,7 @@ function PMA_syncDisplayDataCompare($rows)
             $p[0] = $row['btn_type'] . 'D' . $p[0];
             echo '<img class="icon data_img" src="' . $pmaThemeImage . 'new_data.png" width="16" height="16"
                 alt="Data" title="' . __('Click to select') . '" style="cursor:pointer" onclick="showDetails('
-                . "'" . implode($p, "','") . "'"
+                . "'" . implode("','", $p) . "'"
                 . ', this, ' . "'" . PMA_escapeJsString(htmlspecialchars($row['src_table_name'])) . "'" . ')" />';
         }
         echo '</td><td>' . htmlspecialchars($row['dst_table_name']) . '</td></tr>';

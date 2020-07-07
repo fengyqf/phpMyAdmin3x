@@ -407,10 +407,10 @@ foreach ($tables as $keyname => $each_table) {
    <?php if ($server_slave_status) { ?><td align="center"><?php
         echo $ignored
             ? PMA_getImage('s_cancel.png', 'NOT REPLICATED')
-            : ''.
+            : (''.
         $do
             ? PMA_getImage('s_success.png', 'REPLICATED')
-            : ''; ?></td><?php } ?>
+            : ''); ?></td><?php } ?>
     <td align="center"><?php echo $browse_table; ?></td>
     <td align="center">
         <a href="tbl_structure.php?<?php echo $tbl_url_query; ?>">
