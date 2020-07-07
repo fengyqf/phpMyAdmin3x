@@ -50,6 +50,10 @@
 
     var $records;
 
+    function __construct($shapeType, $boundingBox = array("xmin" => 0.0, "ymin" => 0.0, "xmax" => 0.0, "ymax" => 0.0), $FileName = NULL) {
+      $this->ShapeFile($shapeType, $boundingBox, $FileName);
+    }
+
     function ShapeFile($shapeType, $boundingBox = array("xmin" => 0.0, "ymin" => 0.0, "xmax" => 0.0, "ymax" => 0.0), $FileName = NULL) {
       $this->shapeType = $shapeType;
       $this->boundingBox = $boundingBox;
@@ -323,6 +327,10 @@
 
     var $SHPData = array();
     var $DBFData = array();
+
+    function __construct($shapeType) {
+      $this->ShapeRecord($shapeType);
+    }
 
     function ShapeRecord($shapeType) {
       $this->shapeType = $shapeType;

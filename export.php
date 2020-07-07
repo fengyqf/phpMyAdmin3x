@@ -430,7 +430,7 @@ do {
     // Gets the number of tables if a dump of a database has been required
     if ($export_type == 'server') {
         if (isset($db_select)) {
-            $tmp_select = implode($db_select, '|');
+            $tmp_select = implode('|', $db_select);
             $tmp_select = '|' . $tmp_select . '|';
         }
         // Walk over databases

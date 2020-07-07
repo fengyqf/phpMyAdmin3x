@@ -786,7 +786,7 @@ if (! defined('PMA_MINIMUM_COMMON')) {
                     }
                 } elseif (in_array($d_cur, $mysql_charsets)
                   || in_array($d_cur, $mysql_collations_flat)
-                  || ($d_cur{0} == '_' && in_array(substr($d_cur, 1), $mysql_charsets))) {
+                  || (substr($d_cur,0,1) == '_' && in_array(substr($d_cur, 1), $mysql_charsets))) {
                     $t_suffix = '_charset';
                 } else {
                     // Do nothing
