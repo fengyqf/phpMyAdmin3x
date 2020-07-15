@@ -278,7 +278,7 @@ echo PMA_generate_html_tabs(PMA_tbl_getSubTabs(), $url_params, '', 'topmenu2');
         $w = $charsets = array();
         $cnt_func = count($func);
         reset($func);
-        while (list($i, $func_type) = each($func)) {
+        foreach($func as $i => $func_type) {
 
             list($charsets[$i]) = explode('_', $collations[$i]);
             $unaryFlag =  (isset($GLOBALS['cfg']['UnaryOperators'][$func_type]) && $GLOBALS['cfg']['UnaryOperators'][$func_type] == 1) ? true : false;
