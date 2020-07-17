@@ -367,7 +367,7 @@ function PMA_displayTableNavigation($pos_next, $pos_prev, $sql_query, $id_for_di
     } // end show all
 
     // Move to the next page or to the last one
-    if (($_SESSION['tmp_user_values']['pos'] + $_SESSION['tmp_user_values']['max_rows'] < $unlim_num_rows)
+    if (((int)$_SESSION['tmp_user_values']['pos'] + (int)$_SESSION['tmp_user_values']['max_rows'] < $unlim_num_rows)
         && $num_rows >= $_SESSION['tmp_user_values']['max_rows']
         && $_SESSION['tmp_user_values']['max_rows'] != 'all'
     ) {
@@ -2056,14 +2056,14 @@ function PMA_displayTable_checkConfigParams()
         && (int) $_REQUEST['session_max_rows'] == $_REQUEST['session_max_rows'])
         || $_REQUEST['session_max_rows'] == 'all'
     ) {
-        $_SESSION['tmp_user_values']['query'][$sql_md5]['max_rows'] = $_REQUEST['session_max_rows'];
+        $_SESSION['tmp_user_values']['query'][$sql_md5]['max_rows'] =($_REQUEST['session_max_rows']);
         unset($_REQUEST['session_max_rows']);
     } elseif (empty($_SESSION['tmp_user_values']['query'][$sql_md5]['max_rows'])) {
         $_SESSION['tmp_user_values']['query'][$sql_md5]['max_rows'] = $GLOBALS['cfg']['MaxRows'];
     }
 
     if (PMA_isValid($_REQUEST['pos'], 'numeric')) {
-        $_SESSION['tmp_user_values']['query'][$sql_md5]['pos'] = $_REQUEST['pos'];
+        $_SESSION['tmp_user_values']['query'][$sql_md5]['pos'] = ($_REQUEST['pos']);
         unset($_REQUEST['pos']);
     } elseif (empty($_SESSION['tmp_user_values']['query'][$sql_md5]['pos'])) {
         $_SESSION['tmp_user_values']['query'][$sql_md5]['pos'] = 0;
