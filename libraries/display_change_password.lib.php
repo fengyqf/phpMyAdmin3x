@@ -27,6 +27,21 @@ $chg_evt_handler = (PMA_USR_BROWSER_AGENT == 'IE' && PMA_USR_BROWSER_VER >= 5)
             }?>
     <fieldset id="fieldset_change_password">
         <legend><?php echo __('Change password'); ?></legend>
+<?php
+if(PMA_MYSQL_INT_VERSION >= 50122 && function_exists('getCurrentAuthenticationPlugin')){
+    $orig_auth_plugin = getCurrentAuthenticationPlugin($mode,
+            $GLOBALS['username'],
+            $GLOBALS['hostname']
+        );
+    $buff=getHtmlForAuthPluginsDropdown($orig_auth_plugin, $mode=$mode, $versions = 'new');
+    $buff='<div class="item">' . "\n"
+       . '<label for="authentication_plugin">Auth-Plugin:</label>'."\n"
+       . $buff . "\n"
+       . '<span class="options">&nbsp;</span>' . "\n"
+       . '</div>' . "\n";
+    echo $buff;
+}
+?>
         <table class="data noclick">
         <tr class="odd">
             <td colspan="2">

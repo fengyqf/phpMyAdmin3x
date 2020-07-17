@@ -1251,6 +1251,10 @@ function PMA_DBI_postConnect($link, $is_controluser = false)
                 'PMA_MYSQL_VERSION_COMMENT',
                 PMA_cacheGet('PMA_MYSQL_VERSION_COMMENT', true)
             );
+            define(
+                'PMA_MYSQL_SERVER_TYPE',
+                PMA_cacheGet('PMA_MYSQL_SERVER_TYPE', true)
+            );
         } else {
             $version = PMA_DBI_fetch_single_row(
                 'SELECT @@version, @@version_comment',
@@ -1267,11 +1271,20 @@ function PMA_DBI_postConnect($link, $is_controluser = false)
                 );
                 define('PMA_MYSQL_STR_VERSION', $version['@@version']);
                 define('PMA_MYSQL_VERSION_COMMENT', $version['@@version_comment']);
+                // server type: MySQL, MariaDB, Percona
+                $serverType='MySQL';
+                if (stripos($version['@@version'], 'mariadb') !== false) {
+                    $serverType = 'MariaDB';
+                }elseif (stripos($version['@@version_comment'], 'percona') !== false) {
+                    $serverType = 'Percona';
+                }
+                define('PMA_MYSQL_SERVER_TYPE', $serverType);
             } else {
                 define('PMA_MYSQL_INT_VERSION', 50015);
                 define('PMA_MYSQL_MAJOR_VERSION', 5);
                 define('PMA_MYSQL_STR_VERSION', '5.00.15');
                 define('PMA_MYSQL_VERSION_COMMENT', '');
+                define('PMA_MYSQL_SERVER_TYPE', 'MySQL');
             }
             PMA_cacheSet(
                 'PMA_MYSQL_INT_VERSION',
@@ -1291,6 +1304,11 @@ function PMA_DBI_postConnect($link, $is_controluser = false)
             PMA_cacheSet(
                 'PMA_MYSQL_VERSION_COMMENT',
                 PMA_MYSQL_VERSION_COMMENT,
+                true
+            );
+            PMA_cacheSet(
+                'PMA_MYSQL_SERVER_TYPE',
+                PMA_MYSQL_SERVER_TYPE,
                 true
             );
         }

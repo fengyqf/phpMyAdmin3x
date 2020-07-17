@@ -110,16 +110,16 @@ require_once './libraries/header_scripts.inc.php';
             var field_null = 'fields_null';
 
             <?php if (isset($rownumber)) { ?>
-            var element_name = field + '[multi_edit][<?php echo htmlspecialchars($rownumber); ?>][' + fieldmd5 + ']';
-            var null_name = field_null + '[multi_edit][<?php echo htmlspecialchars($rownumber); ?>][' + fieldmd5 + ']';
+            var element_name = field . '[multi_edit][<?php echo htmlspecialchars($rownumber); ?>][' . fieldmd5 . ']';
+            var null_name = field_null . '[multi_edit][<?php echo htmlspecialchars($rownumber); ?>][' . fieldmd5 . ']';
             <?php } else { ?>
-            var element_name = field + '[]';
+            var element_name = field . '[]';
             <?php } ?>
 
             <?php if (isset($fieldkey) && is_numeric($fieldkey)) { ?>
-            var element_name_alt = field + '[<?php echo $fieldkey; ?>]';
+            var element_name_alt = field . '[<?php echo $fieldkey; ?>]';
             <?php } else { ?>
-            var element_name_alt = field + '[0]';
+            var element_name_alt = field . '[0]';
             <?php } ?>
 
             if (opener.document.insertForm.elements[element_name]) {
