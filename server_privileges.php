@@ -709,7 +709,7 @@ function PMA_displayPrivTable($db = '*', $table = '*', $submit = true)
         // The "Resource limits" box is not displayed for db-specific privs
         if ($db == '*') {
             echo '    <fieldset>' . "\n"
-               . '        <legend>' . __('Resource limits') . '</legend>' . "\n"
+               . '        <legend>' . __('Resource limits') . ' (Ignored)</legend>' . "\n"
                . '        <p><small><i>' . __('Note: Setting these options to 0 (zero) removes the limit.') . '</i></small></p>' . "\n"
                . '        <div class="item">' . "\n"
                . '            <label for="text_max_questions"><tt><dfn title="'
@@ -901,7 +901,21 @@ function PMA_displayLoginInformationFields($mode = 'new')
        . '<input type="password" name="pma_pw2" id="text_pma_pw2" title="' . __('Re-type') . '" onchange="pred_password.value = \'userdefined\';" />' . "\n"
        . '</div>' . "\n"
        // Generate password added here via jQuery
-       . '</fieldset>' . "\n";
+       .'';
+    if(PMA_MYSQL_INT_VERSION >= 50122){
+        $orig_auth_plugin = getCurrentAuthenticationPlugin($mode,
+                $GLOBALS['username'],
+                $GLOBALS['hostname']
+            );
+        $buff=getHtmlForAuthPluginsDropdown($orig_auth_plugin, $mode=$mode, $versions = 'new');
+        $buff='<div class="item">' . "\n"
+           . '<label for="authentication_plugin">Auth-Plugin:</label>'."\n"
+           . $buff . "\n"
+           . '<span class="options">&nbsp;</span>' . "\n"
+           . '</div>' . "\n";
+        echo $buff;
+    }
+    echo '</fieldset>' . "\n";
 } // end of the 'PMA_displayUserAndHostFields()' function
 
 /**
@@ -929,6 +943,185 @@ if (isset($_REQUEST['change_copy'])) {
 }
 
 
+/* -----------------------------------------------------------------------------
+ * Copy From phpMyAdmin-5.0.1-all-languages, and modified
+ *      ./libraries/classes/Server/Privileges.php
+*/
+
+/**
+ * Check if MariaDB's 'simple_password_check'
+ * OR 'cracklib_password_check' is ACTIVE
+ *
+ * @return boolean if atleast one of the plugins is ACTIVE
+ */
+function checkIfMariaDBPwdCheckPluginActive()
+{
+    if (! (PMA_MYSQL_SERVER_TYPE == 'MariaDB' && PMA_MYSQL_INT_VERSION >= 100002)) {
+        return false;
+    }
+    $result = PMA_DBI_query('SHOW PLUGINS SONAME LIKE \'%_password_check%\'');
+    /* Plugins are not working, for example directory does not exists */
+    if ($result === false) {
+        return false;
+    }
+    while ($row = PMA_DBI_fetch_assoc($result)) {
+        if ($row['Status'] === 'ACTIVE') {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Gets the currently active authentication plugins
+ *
+ * @param string $orig_auth_plugin Default Authentication plugin
+ * @param string $mode             are we creating a new user or are we just
+ *                                 changing  one?
+ *                                 (allowed values: 'new', 'edit', 'change_pw')
+ * @param string $versions         Is MySQL version newer or older than 5.5.7
+ *
+ * @return string
+ */
+function getHtmlForAuthPluginsDropdown(
+    $orig_auth_plugin,
+    $mode = 'new',
+    $versions = 'new'
+) {
+    $select_id = 'select_authentication_plugin'
+        . ($mode == 'change_pw' ? '_cp' : '');
+
+    if ($versions == 'new') {
+        $active_auth_plugins = getActiveAuthPlugins();
+
+        if (isset($active_auth_plugins['mysql_old_password'])) {
+            unset($active_auth_plugins['mysql_old_password']);
+        }
+    } else {
+        $active_auth_plugins = array(
+            'mysql_native_password' => __('Native MySQL authentication'),
+        );
+    }
+    $buff = '<select name="authentication_plugin" id="authentication_plugin">'."\r\n";
+    foreach($active_auth_plugins as $key => $val){
+        if($orig_auth_plugin==$key){
+            $selected=' selected=\"selected\"';
+        }else{
+            $selected='';
+        }
+        $buff .= "    <option value=\"{$key}\" {$selected}>{$val}</option>\r\n";
+    }
+    $buff .= "</select>\r\n";
+    return $buff;
+}
+
+
+/**
+ * Gets the currently active authentication plugins
+ *
+ * @return array  array of plugin names and descriptions
+ */
+function getActiveAuthPlugins()
+{
+    $result = array();
+    $sql="SHOW TABLE STATUS FROM `information_schema` like 'PLUGINS%';";
+    $resultset = PMA_DBI_query($sql);
+    $row = PMA_DBI_fetch_assoc($resultset);
+    if($row==NULL){
+        return $result;
+    }
+    $get_plugins_query = "SELECT `PLUGIN_NAME`, `PLUGIN_DESCRIPTION`"
+        . " FROM `information_schema`.`PLUGINS` "
+        . "WHERE `PLUGIN_TYPE` = 'AUTHENTICATION';";
+    $resultset = PMA_DBI_query($get_plugins_query);
+    while ($row = PMA_DBI_fetch_assoc($resultset)) {
+        // if description is known, enable its translation
+        if ('mysql_native_password' == $row['PLUGIN_NAME']) {
+            $row['PLUGIN_DESCRIPTION'] = __('Native MySQL authentication');
+        } elseif ('sha256_password' == $row['PLUGIN_NAME']) {
+            $row['PLUGIN_DESCRIPTION'] = __('SHA256 password authentication');
+        }
+        $result[$row['PLUGIN_NAME']] = $row['PLUGIN_DESCRIPTION'];
+    }
+
+    return $result;
+}
+
+
+/**
+ * Get current authentication plugin in use - for a user or globally
+ *
+ * @param string $mode     are we creating a new user or are we just
+ *                         changing  one? (allowed values: 'new', 'change')
+ * @param string $username User name
+ * @param string $hostname Host name
+ *
+ * @return string authentication plugin in use
+ */
+function getCurrentAuthenticationPlugin(
+    $mode = 'new',
+    $username = null,
+    $hostname = null
+) {
+    if(PMA_MYSQL_INT_VERSION < 50122){
+        return NULL;
+    }
+    /* Fallback (standard) value */
+    $authentication_plugin = 'mysql_native_password';
+    if (isset($username) && isset($hostname)
+        && $mode == 'change' && 1==2
+    ) {
+        $resultset = PMA_DBI_query(
+            'SELECT `plugin` FROM `mysql`.`user` WHERE '
+            . '`User` = "' . $username . '" AND `Host` = "' . $hostname . '" LIMIT 1'
+        );
+        $row = PMA_DBI_fetch_assoc($resultset);
+        // Table 'mysql'.'user' may not exist for some previous
+        // versions of MySQL - in that case consider fallback value
+        if (is_array($row) && isset($row['plugin'])) {
+            $authentication_plugin = $row['plugin'];
+        }
+    } elseif ($mode == 'change') {
+        $resultset = PMA_DBI_query("SELECT USER() as cu");
+        $row = PMA_DBI_fetch_assoc($resultset);
+        $cu=explode('@', $row['cu']);
+        $username=$cu[0];
+        $hostname = $cu[1];
+        $resultset = PMA_DBI_query(
+            'SELECT * FROM `mysql`.`user` WHERE '
+            . '`User` = "' . $username . '" AND `Host` = "' . $hostname . '"'
+        );
+        $row = PMA_DBI_fetch_assoc($resultset);
+        if (is_array($row) && isset($row['plugin'])) {
+            $authentication_plugin = $row['plugin'];
+        }
+    } elseif (PMA_MYSQL_SERVER_TYPE=='MySQL' && PMA_MYSQL_INT_VERSION >= 50702) {
+        $resultset = PMA_DBI_query('SELECT @@default_authentication_plugin');
+        $row = PMA_DBI_fetch_assoc($resultset);
+        $authentication_plugin = is_array($row) ? $row['@@default_authentication_plugin'] : null;
+    }
+    return $authentication_plugin;
+}
+
+
+/**
+ * Get the hashed string for password
+ *
+ * @param string $password password
+ *
+ * @return string
+ */
+function getHashedPassword($password)
+{
+    $password = PMA_sqlAddSlashes($password);
+    $resultset = PMA_DBI_query("SELECT PASSWORD('" . $password . "') AS `password`;");
+    $result = PMA_DBI_fetch_assoc($resultset);
+
+    return $result['password'];
+}
+// -----------------------------------------------------------------------------
+
+
 /**
  * Adds a user
  *   (Changes / copies a user, part II)
@@ -954,6 +1147,54 @@ if (isset($_REQUEST['adduser_submit']) || isset($_REQUEST['change_copy'])) {
         unset($_user_name);
         break;
     }
+
+    $isMariaDBPwdPluginActive=checkIfMariaDBPwdCheckPluginActive();
+    $idents='';
+    $auth_plg=isset($_REQUEST['authentication_plugin']) ? $_REQUEST['authentication_plugin'] : '';
+    // 'IDENTIFIED WITH auth_plugin'
+    // is supported by MySQL 5.5.7+
+    if ((PMA_MYSQL_SERVER_TYPE == 'MySQL' || PMA_MYSQL_SERVER_TYPE == 'Percona')
+        && PMA_MYSQL_INT_VERSION >= 50507
+        && isset($_POST['authentication_plugin'])
+    ) {
+        $idents = 'IDENTIFIED WITH ' . PMA_sqlAddSlashes($auth_plg);
+    }
+
+    // 'IDENTIFIED VIA auth_plugin'
+    // is supported by MariaDB 5.2+
+    if (PMA_MYSQL_SERVER_TYPE == 'MariaDB' && PMA_MYSQL_INT_VERSION >= 50200
+        && isset($_POST['authentication_plugin']) && ! $isMariaDBPwdPluginActive
+    ) {
+        $idents = 'IDENTIFIED VIA ' . PMA_sqlAddSlashes($auth_plg);
+    }
+
+    // Required for binding '%' with '%s'
+    $idents = str_replace(
+        '%',
+        '%%',
+        $idents
+    );
+
+    // MariaDB uses 'USING' whereas MySQL uses 'AS'
+    // but MariaDB with validation plugin needs cleartext password
+    if (PMA_MYSQL_SERVER_TYPE == 'MariaDB' && ! $isMariaDBPwdPluginActive) {
+        $idents .= ' USING \'%s\'';
+    } elseif (PMA_MYSQL_SERVER_TYPE == 'MariaDB') {
+        $idents .= ' IDENTIFIED BY \'%s\'';
+    } elseif ((PMA_MYSQL_SERVER_TYPE == 'MySQL' || PMA_MYSQL_SERVER_TYPE == 'Percona') 
+            && PMA_MYSQL_INT_VERSION >= 80011) {
+        $idents .= ' BY \'%s\'';
+    } elseif(strpos($idents,'IDENTIFIED')===FALSE) {
+        // old mysql server, without any plugin
+        $idents .='IDENTIFIED BY \'%s\' ';
+    } else{
+        $idents .= ' AS \'%s\'';
+    }
+
+    #echo '<li>$idents: '.$idents.'</li>';
+    #echo '<li>$pma_pw: '.$pma_pw.'</li>';
+
+
     $sql = "SELECT '1' FROM `mysql`.`user`"
         . " WHERE `User` = '" . PMA_sqlAddSlashes($username) . "'"
         . " AND `Host` = '" . PMA_sqlAddSlashes($hostname) . "';";
@@ -969,17 +1210,27 @@ if (isset($_REQUEST['adduser_submit']) || isset($_REQUEST['change_copy'])) {
         $real_sql_query = 'GRANT ' . join(', ', PMA_extractPrivInfo()) . ' ON *.* TO \''
             . PMA_sqlAddSlashes($username) . '\'@\'' . PMA_sqlAddSlashes($hostname) . '\'';
         if ($pred_password != 'none' && $pred_password != 'keep') {
-            $sql_query = $real_sql_query . ' IDENTIFIED BY \'***\'';
-            $real_sql_query .= ' IDENTIFIED BY \'' . PMA_sqlAddSlashes($pma_pw) . '\'';
+            $sql_query = $real_sql_query;# . ' '.$idents.' BY \'***\'';
+            #$real_sql_query .= ' '.$idents.' BY \'' . PMA_sqlAddSlashes($pma_pw) . '\'';
             if (isset($create_user_real)) {
-                $create_user_show = $create_user_real . ' IDENTIFIED BY \'***\'';
-                $create_user_real .= ' IDENTIFIED BY \'' . PMA_sqlAddSlashes($pma_pw) . '\'';
+                if (PMA_MYSQL_SERVER_TYPE == 'MariaDB' && ! $isMariaDBPwdPluginActive) {
+                    $pma_pw_stm=getHashedPassword($pma_pw);
+                    $tmp_starts='hashed<***>';
+                }else{
+                    $pma_pw_stm=$pma_pw;
+                    $tmp_starts='***';
+                }
+                $create_user_show = $create_user_real . ' '.sprintf($idents,$tmp_starts);
+                $create_user_real .= ' '.sprintf($idents,PMA_sqlAddSlashes($pma_pw_stm));
+                unset($tmp_starts);
             }
         } else {
             if ($pred_password == 'keep' && ! empty($password)) {
-                $real_sql_query .= ' IDENTIFIED BY PASSWORD \'' . $password . '\'';
+                $real_sql_query .= ' '.sprintf($idents,$password);
+                #$idents.' BY PASSWORD \'' . $password . '\'';
                 if (isset($create_user_real)) {
-                    $create_user_real .= ' IDENTIFIED BY PASSWORD \'' . $password . '\'';
+                    $create_user_real .= ' '.sprintf($idents,$password);
+                    #$idents.' BY PASSWORD \'' . $password . '\'';
                 }
             }
             $sql_query = $real_sql_query;
@@ -990,6 +1241,7 @@ if (isset($_REQUEST['adduser_submit']) || isset($_REQUEST['change_copy'])) {
         /**
          * @todo similar code appears twice in this script
          */
+        /*
         if ((isset($Grant_priv) && $Grant_priv == 'Y')
             || (isset($max_questions) || isset($max_connections)
             || isset($max_updates) || isset($max_user_connections))
@@ -1022,6 +1274,7 @@ if (isset($_REQUEST['adduser_submit']) || isset($_REQUEST['change_copy'])) {
                 $sql_query .= ' MAX_USER_CONNECTIONS ' . $max_user_connections;
             }
         }
+        */
         if (isset($create_user_real)) {
             $create_user_real .= ';';
             $create_user_show .= ';';
@@ -1035,7 +1288,10 @@ if (isset($_REQUEST['adduser_submit']) || isset($_REQUEST['change_copy'])) {
                 if (! PMA_DBI_try_query($create_user_real)) {
                     $_error = true;
                 }
-                $sql_query = $create_user_show . $sql_query;
+                #$sql_query = $create_user_show . $sql_query;
+                $sql_query = $create_user_real . $sql_query;
+                echo '<li>[notice] $sql_query is using $create_user_real </li>';
+
             }
 
             if ($_error || ! PMA_DBI_try_query($real_sql_query)) {
@@ -1113,6 +1369,12 @@ if (isset($_REQUEST['adduser_submit']) || isset($_REQUEST['change_copy'])) {
             }
             $queries_for_display[$tmp_count - 1] = $sql_query;
         }
+
+        #echo '<li>$real_sql_query: '.$real_sql_query.'</li>';
+        #echo '<li>$queries: '.$queries.'</li>';
+        #echo '<li>$queries_for_display: '.$queries_for_display.'</li>';
+        echo '<li>$create_user_real: '.$create_user_real.'</li>';
+        echo '<li>$sql_query: '.$sql_query.'</li>';
         unset($res, $real_sql_query);
     }
 }
@@ -1227,6 +1489,7 @@ if (! empty($update_privs)) {
         /**
          * @todo similar code appears twice in this script
          */
+        /*  -- not compatible with mysql 8.0
         if ((isset($Grant_priv) && $Grant_priv == 'Y')
             || (! isset($dbname)
             && (isset($max_questions) || isset($max_connections)
@@ -1253,6 +1516,7 @@ if (! empty($update_privs)) {
                 $sql_query2 .= ' MAX_USER_CONNECTIONS ' . $max_user_connections;
             }
         }
+        */
         $sql_query2 .= ';';
     }
     if (! PMA_DBI_try_query($sql_query0)) {
@@ -1318,7 +1582,137 @@ if (isset($_REQUEST['change_pw'])) {
     } // end if
 
     // here $nopass could be == 1
-    if (empty($message)) {
+    if (!$message) {
+        $hashing_function = 'PASSWORD';
+        $serverType = PMA_MYSQL_SERVER_TYPE;
+        $serverVersion = PMA_MYSQL_INT_VERSION;
+        $authentication_plugin
+            = (isset($_POST['authentication_plugin'])
+            ? $_POST['authentication_plugin']
+            : getCurrentAuthenticationPlugin(
+                'change',
+                $username,
+                $hostname
+            ));
+
+        // Use 'ALTER USER ...' syntax for MySQL 5.7.6+
+        if ($serverType == 'MySQL'
+            && $serverVersion >= 50706
+        ) {
+            if ($authentication_plugin != 'mysql_old_password') {
+                $query_prefix = "ALTER USER '"
+                    . PMA_sqlAddSlashes($username)
+                    . "'@'" . PMA_sqlAddSlashes($hostname) . "'"
+                    . " IDENTIFIED WITH "
+                    . $authentication_plugin
+                    . " BY '";
+            } else {
+                $query_prefix = "ALTER USER '"
+                    . PMA_sqlAddSlashes($username)
+                    . "'@'" . PMA_sqlAddSlashes($hostname) . "'"
+                    . " IDENTIFIED BY '";
+            }
+
+            // in $sql_query which will be displayed, hide the password
+            $sql_query = $query_prefix . "*'";
+
+            $local_query = $query_prefix
+                . PMA_sqlAddSlashes($_POST['pma_pw']) . "'";
+        } elseif ($serverType == 'MariaDB' && $serverVersion >= 10000) {
+            // MariaDB uses "SET PASSWORD" syntax to change user password.
+            // On Galera cluster only DDL queries are replicated, since
+            // users are stored in MyISAM storage engine.
+            $query_prefix = "SET PASSWORD FOR  '"
+                . PMA_sqlAddSlashes($username)
+                . "'@'" . PMA_sqlAddSlashes($hostname) . "'"
+                . " = PASSWORD ('";
+            $sql_query = $local_query = $query_prefix
+                . PMA_sqlAddSlashes($_POST['pma_pw']) . "')";
+        } elseif ($serverType == 'MariaDB'
+            && $serverVersion >= 50200
+            //&& $this->dbi->isSuperuser()
+        ) {
+            // Use 'UPDATE `mysql`.`user` ...' Syntax for MariaDB 5.2+
+            if ($authentication_plugin == 'mysql_native_password') {
+                // Set the hashing method used by PASSWORD()
+                // to be 'mysql_native_password' type
+                PMA_DBI_try_query('SET old_passwords = 0;');
+            } elseif ($authentication_plugin == 'sha256_password') {
+                // Set the hashing method used by PASSWORD()
+                // to be 'sha256_password' type
+                PMA_DBI_try_query('SET `old_passwords` = 2;');
+            }
+
+            $hashedPassword = getHashedPassword($_POST['pma_pw']);
+
+            $sql_query        = 'SET PASSWORD FOR \''
+                . PMA_sqlAddSlashes($username)
+                . '\'@\'' . PMA_sqlAddSlashes($hostname) . '\' = '
+                . ($_POST['pma_pw'] == ''
+                    ? '\'\''
+                    : $hashing_function . '(\''
+                    . preg_replace('@.@s', '*', $_POST['pma_pw']) . '\')');
+
+            $local_query = "UPDATE `mysql`.`user` SET "
+                . " `authentication_string` = '" . $hashedPassword
+                . "', `Password` = '', "
+                . " `plugin` = '" . $authentication_plugin . "'"
+                . " WHERE `User` = '" . $username . "' AND Host = '"
+                . $hostname . "';";
+        } else {
+            // USE 'SET PASSWORD ...' syntax for rest of the versions
+            // Backup the old value, to be reset later
+            $res = PMA_DBI_query('SELECT @@old_passwords;');
+            $row = PMA_DBI_fetch_row($res);
+            $orig_value = $row['@@old_passwords'];
+            // Update the plugin for the user, IF exists
+            if($authentication_plugin){
+                $update_plugin_query = "UPDATE `mysql`.`user` SET"
+                    . " `plugin` = '" . $authentication_plugin . "'"
+                    . " WHERE `User` = '" . $username . "' AND Host = '"
+                    . $hostname . "';";
+                PMA_DBI_try_query($update_plugin_query)
+                    or PMA_mysqlDie(PMA_DBI_getError(), $update_plugin_query, false, $err_url);
+                PMA_DBI_try_query("FLUSH PRIVILEGES;");
+            }
+
+            if ($authentication_plugin == 'mysql_native_password') {
+                // Set the hashing method used by PASSWORD()
+                // to be 'mysql_native_password' type
+                PMA_DBI_try_query('SET old_passwords = 0;');
+            } elseif ($authentication_plugin == 'sha256_password') {
+                // Set the hashing method used by PASSWORD()
+                // to be 'sha256_password' type
+                PMA_DBI_try_query('SET `old_passwords` = 2;');
+            }
+            $sql_query        = 'SET PASSWORD FOR \''
+                . PMA_sqlAddSlashes($username)
+                . '\'@\'' . PMA_sqlAddSlashes($hostname) . '\' = '
+                . ($_POST['pma_pw'] == ''
+                    ? '\'\''
+                    : $hashing_function . '(\''
+                    . preg_replace('@.@s', '*', $_POST['pma_pw']) . '\')');
+
+            $local_query      = 'SET PASSWORD FOR \''
+                . PMA_sqlAddSlashes($username)
+                . '\'@\'' . PMA_sqlAddSlashes($hostname) . '\' = '
+                . ($_POST['pma_pw'] == '' ? '\'\'' : $hashing_function
+                . '(\'' . PMA_sqlAddSlashes($_POST['pma_pw']) . '\')');
+        }
+
+        PMA_DBI_try_query($local_query)
+            or PMA_mysqlDie(PMA_DBI_getError(), $sql_query, false, $err_url);
+        $message = PMA_Message::success(__('The password for %s was changed successfully.'));
+        $message->addParam('\'' . htmlspecialchars($username) . '\'@\'' . htmlspecialchars($hostname) . '\'');
+    }
+
+
+
+
+    # origin pma 3.5.8.2 
+    # XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    // here $nopass could be == 1
+    if (empty($message) and 1==2) { 
 
         $hashing_function = (! empty($pw_hash) && $pw_hash == 'old' ? 'OLD_' : '')
                       . 'PASSWORD';
@@ -1331,6 +1725,12 @@ if (isset($_REQUEST['change_pw'])) {
         $message = PMA_Message::success(__('The password for %s was changed successfully.'));
         $message->addParam('\'' . htmlspecialchars($username) . '\'@\'' . htmlspecialchars($hostname) . '\'');
     }
+
+
+
+
+
+
 }
 
 
@@ -1570,6 +1970,8 @@ if (empty($_REQUEST['adduser']) && (! isset($checkprivs) || ! strlen($checkprivs
         $sql_query = 'SELECT *,' .
             "       IF(`Password` = _latin1 '', 'N', 'Y') AS 'Password'" .
             '  FROM `mysql`.`user`';
+        // MySQL 5.7+ changed privilege table, Password no more
+        $sql_query = 'SELECT * FROM `mysql`.`user`';
 
         $sql_query .= (isset($initial) ? PMA_rangeOfUsers($initial) : '');
 
@@ -1689,6 +2091,16 @@ if (empty($_REQUEST['adduser']) && (! isset($checkprivs) || ! strlen($checkprivs
 
                 while ($row = PMA_DBI_fetch_assoc($res)) {
                     $row['privs'] = PMA_extractPrivInfo($row, true);
+                    // Password(Y/N/?) refer: pma5.0.1 getHtmlTableBodyForUserRights()
+                    if ((isset($row['authentication_string'])
+                        && ! empty($row['authentication_string']))
+                        || (isset($row['Password'])
+                        && ! empty($row['Password']))
+                    ) {
+                        $row['Password'] = 'Y';
+                    } else {
+                        $row['Password'] = 'N';
+                    }
                     $db_rights[$row['User']][$row['Host']] = $row;
                 }
                 @PMA_DBI_free_result($res);
