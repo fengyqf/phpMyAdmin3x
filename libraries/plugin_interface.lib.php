@@ -261,7 +261,7 @@ function PMA_pluginGetOneOption($section, $plugin_name, $id, &$opt)
          * needs translation. */
         $ret .= 'UNKNOWN OPTION ' . $opt['type'] . ' IN IMPORT PLUGIN ' . $plugin_name . '!';
     }
-    if (isset($opt['doc'])) {
+    if (isset($opt['doc']) && is_array(($opt['doc'])) ) {
         if (count($opt['doc']) == 3) {
             $ret .= PMA_showMySQLDocu($opt['doc'][0], $opt['doc'][1], false, $opt['doc'][2]);
         } elseif (count($opt['doc']) == 1) {
@@ -297,7 +297,7 @@ function PMA_pluginGetOptions($section, &$list)
         $ret .= '<div id="' . $plugin_name . '_options" class="format_specific_options">';
         $count = 0;
             $ret .= '<h3>' . PMA_getString($val['text']) . '</h3>';
-        if (isset($val['options']) && count($val['options']) > 0) {
+        if (isset($val['options']) && is_array($val['options']) && count($val['options']) > 0) {
             foreach ($val['options'] as $id => $opt) {
                 if ($opt['type'] != 'hidden' && $opt['type'] != 'begin_group' && $opt['type'] != 'end_group' && $opt['type'] != 'begin_subgroup' && $opt['type'] != 'end_subgroup') {
                     $count++;
