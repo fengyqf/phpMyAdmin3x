@@ -54,6 +54,19 @@ $cfg['ExecTimeLimit'] = 0;
 $cfg['PropertiesIconic'] = true;
 $cfg['ShowPhpInfo'] = true;
 $cfg['blowfish_secret'] = 'fsctoken';
+$cfg['Export']['sql_procedure_function'] = false;
+$cfg['pinned_collations'] = array(
+    'utf8mb4_general_ci','utf8mb4_unicode_ci','utf8mb4_bin',
+    'utf8_general_ci','utf8_unicode_ci','utf8_bin',
+);
+
+/*  ** put your addition configure into  ./config_patch.inc.php, such as:
+
+ *   user/password for the default mysql-server
+
+$cfg['Servers'][1]['auth_type'] = 'config';
+$cfg['Servers'][1]['user'] = 'root';
+$cfg['Servers'][1]['password'] = 'you-password';
 
 
 /* Addition config */

@@ -1092,7 +1092,7 @@ function PMA_DBI_get_columns($database, $table, $column = null, $full = false, $
     $sql = PMA_DBI_get_columns_sql($database, $table, $column, $full);
     $fields = PMA_DBI_fetch_result($sql, 'Field', null, $link);
     if (! is_array($fields) || count($fields) == 0) {
-        return null;
+        return array();
     }
     if (PMA_DRIZZLE) {
         // fix Key column, it's much simpler in PHP than in SQL
@@ -1124,7 +1124,8 @@ function PMA_DBI_get_columns($database, $table, $column = null, $full = false, $
         }
     }
 
-    return ($column != null) ? array_shift($fields) : $fields;
+    $rtn = ($column != null) ? array_shift($fields) : $fields;
+    return ($rtn == NULL) ? array() : $rtn;
 }
 
 /**
