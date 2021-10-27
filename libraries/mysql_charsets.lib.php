@@ -114,6 +114,23 @@ function PMA_generateCharsetDropdownBox($type = PMA_CSDROPDOWN_COLLATION,
             . '</option>' . "\n";
     }
     $return_str .= '<option value=""></option>' . "\n";
+    $found=false;
+    if(isset($GLOBALS['cfg']['pinned_collations']) && is_array($GLOBALS['cfg']['pinned_collations'])){
+        $return_str .= '<optgroup label="Pinned" title="Pinned Collations">' . "\n";
+        foreach ($GLOBALS['cfg']['pinned_collations'] as $current_collation) {
+            if (!$mysql_collations_available[$current_collation]) {
+                continue;
+            }
+            $return_str .= '<option value="' . $current_collation
+                . '" title="' . PMA_getCollationDescr($current_collation) . '"'
+                . ($default == $current_collation ? ' selected="selected"' : '') . '>'
+                . $current_collation . '</option>' . "\n";
+            if($default == $current_collation){
+                $found=true;
+            }
+        }
+        $return_str .= '</optgroup>' . "\n";
+    }
     foreach ($mysql_charsets as $current_charset) {
         if (!$mysql_charsets_available[$current_charset]) {
             continue;
@@ -132,7 +149,7 @@ function PMA_generateCharsetDropdownBox($type = PMA_CSDROPDOWN_COLLATION,
                 }
                 $return_str .= '<option value="' . $current_collation
                     . '" title="' . PMA_getCollationDescr($current_collation) . '"'
-                    . ($default == $current_collation ? ' selected="selected"' : '') . '>'
+                    . ((!$found && $default == $current_collation) ? ' selected="selected"' : '') . '>'
                     . $current_collation . '</option>' . "\n";
             }
             $return_str .= '</optgroup>' . "\n";
@@ -144,6 +161,7 @@ function PMA_generateCharsetDropdownBox($type = PMA_CSDROPDOWN_COLLATION,
         }
     }
     $return_str .= '</select>' . "\n";
+    $return_str .= (!$label) ? '' : ' <dfn title="define pinned_collations as php array with collations in config.ini.php for quick select">?</dfn> ';
 
     return $return_str;
 }
