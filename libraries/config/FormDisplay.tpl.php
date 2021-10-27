@@ -121,7 +121,7 @@ function display_fieldset_top($title = '', $description = '', $errors = null, $a
  * @param bool   $value_is_default
  * @param array  $opts
  */
-function display_input($path, $name, $description = '', $type, $value, $value_is_default = true, $opts = null)
+function display_input($path, $name, $description = '', $type='', $value='', $value_is_default = true, $opts = null)
 {
     global $_FormDisplayGroup;
     static $base_dir; // Relative path to the root phpMyAdmin folder

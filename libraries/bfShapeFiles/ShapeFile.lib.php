@@ -8,7 +8,7 @@
   function swap($binValue) {
     $result = $binValue{strlen($binValue) - 1};
     for($i = strlen($binValue) - 2; $i >= 0 ; $i--) {
-      $result .= $binValue{$i};
+      $result .= substr($binValue,$i,1);
     }
 
     return $result;
