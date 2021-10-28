@@ -43,6 +43,31 @@ if (isset($_REQUEST['do_save_data'])) {
     $changes = array();
 
     for ($i = 0; $i < $field_cnt; $i++) {
+        //same as ./tbl_addfield.php
+        $tmp_pos='';
+        if($_REQUEST['field_after'][$i]){
+            // field position defined in files list
+            $tmp_field_def=true;
+            if($_REQUEST['field_after'][$i]=='-first'){
+                $tmp_pos .= ' FIRST';
+            }elseif($_REQUEST['field_after'][$i]=='-prev'){
+                $tmp_pos .= ($i==0) ? '' : ' AFTER ' . PMA_backquote($_REQUEST['field_name'][$i-1]);
+            }else{
+                $tmp_pos .= ' AFTER ' . PMA_backquote($_REQUEST['field_after'][$i]);
+            }
+        }elseif (!isset($tmp_field_def) && $_REQUEST['field_where'] != 'last' && $_REQUEST['after_field']) {
+            // Only the first field can be added somewhere other than at the end
+            if ($i == 0) {
+                if ($_REQUEST['field_where'] == 'first') {
+                    $tmp_pos .= ' FIRST';
+                } else {
+                    $tmp_pos .= ' AFTER ' . PMA_backquote($_REQUEST['after_field']);
+                }
+            } else {
+                $tmp_pos .= ' AFTER ' . PMA_backquote($_REQUEST['field_name'][$i-1]);
+            }
+        }
+
         $changes[] = 'CHANGE ' . PMA_Table::generateAlter(
             $_REQUEST['field_orig'][$i],
             $_REQUEST['field_name'][$i],
@@ -66,7 +91,7 @@ if (isset($_REQUEST['do_save_data'])) {
             $key_fields,
             $i,
             $_REQUEST['field_default_orig'][$i]
-        );
+        ) . $tmp_pos;
     } // end for
 
     // Builds the primary keys statements and updates the table
