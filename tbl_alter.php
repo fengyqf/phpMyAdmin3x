@@ -37,12 +37,43 @@ $err_url = 'tbl_structure.php?' . PMA_generate_common_url($db, $table);
  * Modifications have been submitted -> updates the table
  */
 $abort = false;
+if(!isset($_REQUEST['field_where'])){
+    $_REQUEST['field_where']=NULL;
+}
+if(!isset($_REQUEST['after_field'])){
+    $_REQUEST['after_field']=NULL;
+}
 if (isset($_REQUEST['do_save_data'])) {
     $field_cnt = count($_REQUEST['field_orig']);
     $key_fields = array();
     $changes = array();
 
     for ($i = 0; $i < $field_cnt; $i++) {
+        //same as ./tbl_addfield.php
+        $tmp_pos='';
+        if($_REQUEST['field_after'][$i]){
+            // field position defined in files list
+            $tmp_field_def=true;
+            if($_REQUEST['field_after'][$i]=='-first'){
+                $tmp_pos .= ' FIRST';
+            }elseif($_REQUEST['field_after'][$i]=='-prev'){
+                $tmp_pos .= ($i==0) ? '' : ' AFTER ' . PMA_backquote($_REQUEST['field_name'][$i-1]);
+            }else{
+                $tmp_pos .= ' AFTER ' . PMA_backquote($_REQUEST['field_after'][$i]);
+            }
+        }elseif (!isset($tmp_field_def) && $_REQUEST['field_where'] != 'last' && $_REQUEST['after_field']) {
+            // Only the first field can be added somewhere other than at the end
+            if ($i == 0) {
+                if ($_REQUEST['field_where'] == 'first') {
+                    $tmp_pos .= ' FIRST';
+                } else {
+                    $tmp_pos .= ' AFTER ' . PMA_backquote($_REQUEST['after_field']);
+                }
+            } else {
+                $tmp_pos .= ' AFTER ' . PMA_backquote($_REQUEST['field_name'][$i-1]);
+            }
+        }
+
         $changes[] = 'CHANGE ' . PMA_Table::generateAlter(
             $_REQUEST['field_orig'][$i],
             $_REQUEST['field_name'][$i],
@@ -66,7 +97,7 @@ if (isset($_REQUEST['do_save_data'])) {
             $key_fields,
             $i,
             $_REQUEST['field_default_orig'][$i]
-        );
+        ) . $tmp_pos;
     } // end for
 
     // Builds the primary keys statements and updates the table
@@ -130,7 +161,7 @@ if (isset($_REQUEST['do_save_data'])) {
             }
         }
 
-        if ( $_REQUEST['ajax_request'] == true) {
+        if ( isset($_REQUEST['ajax_request']) && $_REQUEST['ajax_request'] == true) {
             $extra_data['sql_query'] = PMA_showMessage(null, $sql_query);
             PMA_ajaxResponse($message, $message->isSuccess(), $extra_data);
         }
