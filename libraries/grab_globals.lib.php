@@ -43,7 +43,9 @@ function PMA_recursive_extract($array, $target=NULL, $sanitize = true)
         if (strlen($key) === 0) {
             continue;
         }
+        $GLOBALS[$key] = $array[$key];
 
+        /*  # reset to PMA origin code, it seems useless, and was commented
         if (is_array($array[$key])) {
             // there could be a variable coming from a cookie of
             // another application, with the same name as this array
@@ -53,6 +55,7 @@ function PMA_recursive_extract($array, $target=NULL, $sanitize = true)
         } else {
             $GLOBALS[$key] = $array[$key];
         }
+        */
     }
     return true;
 }
