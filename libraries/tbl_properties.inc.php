@@ -120,6 +120,7 @@ $available_mime = array();
 
 $comments_map = PMA_getComments($db, $table);
 $header_cells[] = __('Comments');
+$header_cells[] = __('Position');
 
 if ($cfgRelation['mimework'] && $cfg['BrowseMIME']) {
     $mime_map = PMA_getMIME($db, $table);
@@ -145,6 +146,26 @@ if (isset($field_fulltext) && is_array($field_fulltext)) {
     foreach ($field_fulltext as $fulltext_nr => $fulltext_indexkey) {
         $submit_fulltext[$fulltext_indexkey] = $fulltext_indexkey;
     }
+}
+
+// cache fields in array, for field position in table structure
+$fx_fields = array();
+foreach( (array) PMA_DBI_get_columns($db, $table, null, true) as $key => $value){
+    $fx_fields[$key]=$value['Field'];
+}
+
+function getHtmlFieldsSelect($name,$fields,$check=NULL,$id=NULL){
+    $buff  ='<select name="'.$name.'" '.($id ? ' id="'.$id.'"' : '').'>'."\n";
+    $buff .='  <option value=""'.($check!==NULL ? '' : ' selected="selected"').'></option>'."\n";
+    $buff .='  <option value="-first">First</option>'."\n";
+    $buff .='  <option value="-prev">Previous</option>'."\n";
+    foreach($fields as $key => $value){
+        $buff .= '  <option value="'.$key.'"'
+                .($check==$key ? ' selected="selected' : '')
+                .'>AFTER `'.$value.'`</option>'."\n";
+    }
+    $buff .= '</select>'."\n";
+    return $buff;
 }
 
 for ($i = 0; $i < $num_fields; $i++) {
@@ -510,6 +531,12 @@ for ($i = 0; $i < $num_fields; $i++) {
         . ' type="text" name="field_comments[' . $i . ']" size="12"'
         . ' value="' . (isset($row['Field']) && is_array($comments_map) && isset($comments_map[$row['Field']]) ?  htmlspecialchars($comments_map[$row['Field']]) : '') . '"'
         . ' class="textfield" />';
+    $ci++;
+
+    // position
+    $content_cells[$i][$ci] = getHtmlFieldsSelect('field_after[' . $i . ']'
+        , $fx_fields, $check=NULL
+        , $id='field_' . $i . '_' . ($ci - $ci_offset) . '');
     $ci++;
 
     // column MIME-types

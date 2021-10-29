@@ -99,20 +99,31 @@ if (isset($_REQUEST['do_save_data'])) {
             $field_primary,
             $i
         );
-
-        if ($_REQUEST['field_where'] != 'last') {
+        //same as ./tbl_alter.php
+        $tmp_pos='';
+        if($_REQUEST['field_after'][$i]){
+            // field position defined in files list
+            $tmp_field_def=true;
+            if($_REQUEST['field_after'][$i]=='-first'){
+                $tmp_pos .= ' FIRST';
+            }elseif($_REQUEST['field_after'][$i]=='-prev'){
+                $tmp_pos .= ($i==0) ? '' : ' AFTER ' . PMA_backquote($_REQUEST['field_name'][$i-1]);
+            }else{
+                $tmp_pos .= ' AFTER ' . PMA_backquote($_REQUEST['field_after'][$i]);
+            }
+        }elseif (!isset($tmp_field_def) && $_REQUEST['field_where'] != 'last' && $_REQUEST['after_field']) {
             // Only the first field can be added somewhere other than at the end
             if ($i == 0) {
                 if ($_REQUEST['field_where'] == 'first') {
-                    $definition .= ' FIRST';
+                    $tmp_pos .= ' FIRST';
                 } else {
-                    $definition .= ' AFTER ' . PMA_backquote($_REQUEST['after_field']);
+                    $tmp_pos .= ' AFTER ' . PMA_backquote($_REQUEST['after_field']);
                 }
             } else {
-                $definition .= ' AFTER ' . PMA_backquote($_REQUEST['field_name'][$i-1]);
+                $tmp_pos .= ' AFTER ' . PMA_backquote($_REQUEST['field_name'][$i-1]);
             }
         }
-        $definitions[] = $definition;
+        $definitions[] = $definition . $tmp_pos;
     } // end for
 
     // Builds the primary keys statements and updates the table
