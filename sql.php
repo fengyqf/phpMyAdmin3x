@@ -420,9 +420,9 @@ $full_sql_query = $sql_query;
 // Handle remembered sorting order, only for single table query
 if ($GLOBALS['cfg']['RememberSorting']
     && ! ($is_count || $is_export || $is_func || $is_analyse)
-    && count($analyzed_sql[0]['select_expr']) == 0
+    && ($analyzed_sql[0]['select_expr']==NULL || count($analyzed_sql[0]['select_expr']) == 0)
     && isset($analyzed_sql[0]['queryflags']['select_from'])
-    && count($analyzed_sql[0]['table_ref']) == 1
+    && (is_array($analyzed_sql[0]['table_ref']) && count($analyzed_sql[0]['table_ref']) == 1)
 ) {
     $pmatable = new PMA_Table($table, $db);
     if (empty($analyzed_sql[0]['order_by_clause'])) {
@@ -493,7 +493,7 @@ if (isset($GLOBALS['show_as_php']) || ! empty($GLOBALS['validatequery'])) {
     // Measure query time.
     $querytime_before = array_sum(explode(' ', microtime()));
 
-    $result   = @PMA_DBI_try_query($full_sql_query, null, PMA_DBI_QUERY_STORE);
+    $result   = (!$full_sql_query) ? '' : @PMA_DBI_try_query($full_sql_query, null, PMA_DBI_QUERY_STORE);
 
     // If a stored procedure was called, there may be more results that are
     // queued up and waiting to be flushed from the buffer. So let's do that.
