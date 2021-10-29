@@ -20,7 +20,11 @@ if (! defined('PHPMYADMIN')) {
  * @param bool    $sanitize   prevent importing key names in $_import_blacklist
  * @return bool
  */
-function PMA_recursive_extract($array, &$target, $sanitize = true)
+/*  # fix for php 8.1.0RC5, 2021/10/29
+    infact, $target is allways $GLOBALS in all useage of this function,
+    and $GLOBAL is not allowed to pass by reference in function param
+*/
+function PMA_recursive_extract($array, $target=NULL, $sanitize = true)
 {
     if (! is_array($array)) {
         return false;
@@ -43,11 +47,11 @@ function PMA_recursive_extract($array, &$target, $sanitize = true)
         if (is_array($array[$key])) {
             // there could be a variable coming from a cookie of
             // another application, with the same name as this array
-            unset($target[$key]);
+            unset($GLOBALS[$key]);
 
-            PMA_recursive_extract($array[$key], $target[$key], false);
+            PMA_recursive_extract($array[$key], $GLOBALS[$key], false);
         } else {
-            $target[$key] = $array[$key];
+            $GLOBALS[$key] = $array[$key];
         }
     }
     return true;
