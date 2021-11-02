@@ -3844,4 +3844,21 @@ function PMA_parseEnumSetValues($definition, $escapeHtml = true)
     return $values;
 }
 
+
+/**
+ * wrapped count(), to compatible php 8.x
+ */
+function wrp_count($value , int $mode = NULL)
+{
+    if($value===NULL) {
+        return 0;
+    }elseif(is_array($value)) {
+        return count($value);
+    }else{
+        return 1;
+    }
+}
+
+
+
 ?>
