@@ -345,7 +345,7 @@ if (isset($zoom_submit) && $inputs[0] != 'pma_null' && $inputs[1] != 'pma_null' 
         $tmp = array();
         // The where clause
         $charsets = array();
-        $cnt_func = count($zoomFunc[$i]);
+        $cnt_func = wrp_count($zoomFunc[$i]);
         $func_type = $zoomFunc[$i];
         list($charsets[$i]) = explode('_', $collations[$i]);
         $unaryFlag = (isset($GLOBALS['cfg']['UnaryOperators'][$func_type])
