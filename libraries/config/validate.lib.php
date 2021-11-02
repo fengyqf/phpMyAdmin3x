@@ -225,6 +225,9 @@ function test_db_connection($extension, $connect_type, $host, $port, $socket, $u
             mysql_close($conn);
         }
     } else {
+        if(defined('MYSQLI_REPORT_ERROR')){
+            mysqli_report(MYSQLI_REPORT_ERROR );
+        }
         $conn = @mysqli_connect($host, $user, $pass, null, $port, $socket);
         if (!$conn) {
             $error = __('Could not connect to MySQL server');
