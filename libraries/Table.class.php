@@ -308,30 +308,45 @@ class PMA_Table
      */
     static public function sGetStatusInfo($db, $table, $info = null, $force_read = false, $disable_error = false)
     {
+        $table_low=strtolower($table);
         if (! isset(PMA_Table::$cache[$db][$table]) || $force_read) {
             PMA_DBI_get_tables_full($db, $table);
         }
 
-        if (! isset(PMA_Table::$cache[$db][$table])) {
+        if (! isset(PMA_Table::$cache[$db][$table]) && ! isset(PMA_Table::$cache[$db][$table_low])) {
             // happens when we enter the table creation dialog
             // or when we really did not get any status info, for example
             // when $table == 'TABLE_NAMES' after the user tried SHOW TABLES
             return array();
         }
 
-        if (null === $info) {
+        if (null === $info && isset(PMA_Table::$cache[$db][$table])) {
             return PMA_Table::$cache[$db][$table];
         }
-
-        // array_key_exists allows for null values
-        if (!array_key_exists($info, PMA_Table::$cache[$db][$table])) {
-            if (! $disable_error) {
-                trigger_error(__('unknown table status: ') . $info, E_USER_WARNING);
-            }
-            return false;
+        if (null === $info && isset(PMA_Table::$cache[$db][$table_low])) {
+            return PMA_Table::$cache[$db][$table_low];
         }
 
-        return PMA_Table::$cache[$db][$table][$info];
+        // try lower-case for table name, for windows case insensitive
+        if(isset(PMA_Table::$cache[$db][$table])){
+            if (!array_key_exists($info, PMA_Table::$cache[$db][$table])) {
+                if (! $disable_error) {
+                    trigger_error(__('unknown table status: ') . $info, E_USER_WARNING);
+                }
+                return array();
+            }
+            return PMA_Table::$cache[$db][$table][$info];
+        }elseif(isset(PMA_Table::$cache[$db][$table_low])){
+            if (!array_key_exists($info, PMA_Table::$cache[$db][$table_low])) {
+                if (! $disable_error) {
+                    trigger_error(__('unknown table status: ') . $info, E_USER_WARNING);
+                }
+                return array();
+            }
+            return PMA_Table::$cache[$db][$table_low][$info];
+        }else{
+            return array();
+        }
     }
 
     /**
