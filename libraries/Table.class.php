@@ -312,26 +312,32 @@ class PMA_Table
             PMA_DBI_get_tables_full($db, $table);
         }
 
-        if (! isset(PMA_Table::$cache[$db][$table])) {
+        $table_low=strtolower($table);
+        // try lower-case for table name, for windows case insensitive
+        if (isset(PMA_Table::$cache[$db][$table])) {
+            $tb_cache=PMA_Table::$cache[$db][$table];
+        }elseif(substr(PHP_OS,0,3)=='WIN' && isset(PMA_Table::$cache[$db][$table_low])){
+            $tb_cache=PMA_Table::$cache[$db][$table_low];
+        }else{
             // happens when we enter the table creation dialog
             // or when we really did not get any status info, for example
             // when $table == 'TABLE_NAMES' after the user tried SHOW TABLES
-            return '';
+            return (null === $info) ? array() : NULL;
         }
 
         if (null === $info) {
-            return PMA_Table::$cache[$db][$table];
+            return $tb_cache;
         }
 
         // array_key_exists allows for null values
-        if (!array_key_exists($info, PMA_Table::$cache[$db][$table])) {
-            if (! $disable_error) {
+        if (!array_key_exists($info, $tb_cache)) {
+            if ($disable_error) {
                 trigger_error(__('unknown table status: ') . $info, E_USER_WARNING);
             }
-            return false;
+            return NULL;
+        }else{
+            return $tb_cache[$info];
         }
-
-        return PMA_Table::$cache[$db][$table][$info];
     }
 
     /**
