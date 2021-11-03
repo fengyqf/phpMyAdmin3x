@@ -85,7 +85,7 @@ class PMA_RecentTable
             " WHERE `username` = '" . $GLOBALS['cfg']['Server']['user'] . "'";
 
         $row = PMA_DBI_fetch_array(PMA_query_as_controluser($sql_query));
-        if (isset($row[0])) {
+        if (isset($row[0]) && is_array($row[0])) {
             return json_decode($row[0], true);
         } else {
             return array();
