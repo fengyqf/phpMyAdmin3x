@@ -316,7 +316,7 @@ class PMA_Table
             // happens when we enter the table creation dialog
             // or when we really did not get any status info, for example
             // when $table == 'TABLE_NAMES' after the user tried SHOW TABLES
-            return '';
+            return array();
         }
 
         if (null === $info) {

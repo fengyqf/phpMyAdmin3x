@@ -160,7 +160,7 @@ if (isset($plugin_list)) {
             $head .= '    <pma:structure_schemas>' . $crlf;
             $head .= '        <pma:database name="' . htmlspecialchars($db) . '" collation="' . $db_collation . '" charset="' . $db_charset . '">' . $crlf;
 
-            if (count($tables) == 0) {
+            if (wrp_count($tables) == 0) {
                 $tables[] = $table;
             }
 
