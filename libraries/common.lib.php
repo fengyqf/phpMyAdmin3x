@@ -1789,6 +1789,7 @@ function PMA_generate_html_tab($tab, $url_params = array(), $base_dir='')
  */
 function PMA_generate_html_tabs($tabs, $url_params, $base_dir='', $menu_id='topmenu')
 {
+    global $table;
     $tab_navigation = '<div id="' . htmlentities($menu_id) . 'container" class="menucontainer">'
         .'<ul id="' . htmlentities($menu_id) . '">';
 
@@ -1796,9 +1797,14 @@ function PMA_generate_html_tabs($tabs, $url_params, $base_dir='', $menu_id='topm
         $tab_navigation .= PMA_generate_html_tab($tab, $url_params, $base_dir);
     }
 
+    $tmp='';
+    if(substr(PHP_OS,0,3)=='WIN' && !empty($table) && preg_match('/[A-Z]/', $table)){
+        $tmp='<div class="notice">Maybe you should open this table in Lower-case name on Windows.</div>'."\n";
+    }
+
     $tab_navigation .=
          '</ul>' . "\n"
-        .'<div class="clearfloat"></div>'
+        .'<div class="clearfloat"></div>'.$tmp
         .'</div>' . "\n";
 
     return $tab_navigation;
