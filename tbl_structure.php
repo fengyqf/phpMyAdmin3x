@@ -657,6 +657,21 @@ if (! $tbl_is_view && ! $db_is_information_schema) {
     }
     ?>
 
+<?php
+// show create table/view, pity only table here, oops
+$this_url_params = array_merge(
+    $url_params,
+    array(
+        'sql_query' => 'SHOW CREATE '.($tbl_is_view ? 'VIEW ' : 'TABLE ') . PMA_backquote($GLOBALS['table']),
+        'reload'    => 0,
+        'display_text' => 'F',
+    )
+);
+?>
+<a href="sql.php<?php echo PMA_generate_common_url($this_url_params); ?>"><?php
+echo PMA_getIcon('b_newtbl.png', __('SHOW CREATE'), true);
+?></a>
+
     <br />
 <form method="post" action="tbl_addfield.php" id="addColumns" name="addColumns" <?php echo ($GLOBALS['cfg']['AjaxEnable'] ? ' class="ajax"' : '');?>
     onsubmit="return checkFormElementInRange(this, 'num_fields', '<?php echo str_replace('\'', '\\\'', __('You have to add at least one column.')); ?>', 1)">
