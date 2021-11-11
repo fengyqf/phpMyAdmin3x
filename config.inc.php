@@ -61,6 +61,9 @@ $cfg['pinned_collations'] = array(
     'utf8_general_ci','utf8_unicode_ci','utf8_bin',
 );
 
+//forece QueryWindowsSize
+$cfg['QueryWindowSize']['Width'] = 1200;
+$cfg['QueryWindowSize']['Height'] = 400;
 
 /*  ** put your addition configure into  ./config_patch.inc.php, such as:
 
