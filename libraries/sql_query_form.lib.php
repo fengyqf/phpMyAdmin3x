@@ -253,6 +253,7 @@ function PMA_sqlQueryFormInsert($query = '', $is_querywindow = false, $delimiter
     if (count($fields_list)) {
         echo '<input type="button" value="SELECT *" id="selectall" class="sqlbutton" />';
         echo '<input type="button" value="SELECT" id="select" class="sqlbutton" />';
+        echo '<input type="button" value="SELECT" id="selectfmt" class="sqlbutton" />';
         echo '<input type="button" value="INSERT" id="insert" class="sqlbutton" />';
         echo '<input type="button" value="UPDATE" id="update" class="sqlbutton" />';
         echo '<input type="button" value="DELETE" id="delete" class="sqlbutton" />';
