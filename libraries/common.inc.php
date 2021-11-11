@@ -769,6 +769,12 @@ if (@file_exists($_SESSION['PMA_Theme']->getLayoutFile())) {
     }
 }
 
+// override QueryWindowWidth/Hight
+if(isset($GLOBALS['cfg']['QueryWindowSize'])){
+    $GLOBALS['cfg']['QueryWindowWidth']=$GLOBALS['cfg']['QueryWindowSize']['Width'];
+    $GLOBALS['cfg']['QueryWindowHeight']=$GLOBALS['cfg']['QueryWindowSize']['Height'];
+}
+
 if (! defined('PMA_MINIMUM_COMMON')) {
     /**
      * Character set conversion.
