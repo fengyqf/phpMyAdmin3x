@@ -184,6 +184,45 @@ if (isset($_REQUEST['submitoptions'])) {
             }
         }
     }
+
+    // more table options, parse and keep in an array, 2021/11/12
+    $sql_query_ex=array();
+    // Apply to all columns
+    if(!empty($_REQUEST['change_all_collations']) && $_REQUEST['change_all_collations']=='Y'
+            && !empty($_REQUEST['tbl_collation']) && $_REQUEST['tbl_collation']){
+        $tbl_collation_set=$_REQUEST['tbl_collation'];
+        list($charset,) = explode('_', $_REQUEST['tbl_collation']);
+        $sql_query_ex[] = 'ALTER TABLE ' . PMA_backquote($GLOBALS['table']) .' CONVERT TO'
+            . ' CHARACTER SET ' . $charset
+            . ($charset == $tbl_collation_set ? '' : ' COLLATE ' . $tbl_collation_set);
+    }
+    // enable/disable keys
+    if(!empty($_REQUEST['enable_keys']) &&
+        ($_REQUEST['enable_keys']=='DISABLE' || $_REQUEST['enable_keys']=='ENABLE') ){
+        $sql_query_ex[] = 'ALTER TABLE ' . PMA_backquote($GLOBALS['table'])
+            .' '.$_REQUEST['enable_keys'].' KEYS';
+    }
+    // query changes
+    foreach($sql_query_ex as $tmp ){
+        if(empty($sql_query)){
+            $sql_query=$tmp;
+        }
+        $result        .= PMA_DBI_query($tmp) ? true : false;
+        foreach (PMA_DBI_get_warnings() as $warning) {
+            // In MariaDB 5.1.44, when altering a table from Maria to MyISAM
+            // and if TRANSACTIONAL was set, the system reports an error;
+            // I discussed with a Maria developer and he agrees that this
+            // should not be reported with a Level of Error, so here
+            // I just ignore it. But there are other 1478 messages
+            // that it's better to show.
+            if (! ($_REQUEST['new_tbl_type'] == 'MyISAM' && $warning['Code'] == '1478' && $warning['Level'] == 'Error')) {
+                $warning_messages[] = $warning['Level'] . ': #' . $warning['Code']
+                    . ' ' . $warning['Message'];
+            }
+        }
+    }
+
+
 }
 /**
  * Reordering the table has been requested by the user
@@ -383,7 +422,7 @@ if (strstr($show_comment, '; InnoDB free') === false) {
         <td><?php echo PMA_generateCharsetDropdownBox(
                 PMA_CSDROPDOWN_COLLATION,
                 'tbl_collation', null, $tbl_collation, false, 3
-            ); ?>
+            ); ?> <label for="checkbox_change_all_collations" title="Apply to All Columns"><input type="checkbox" name="change_all_collations" value="Y" id="checkbox_change_all_collations">Apply</label>
         </td>
     </tr>
 <?php
@@ -519,6 +558,15 @@ if (isset($possible_row_formats[$tbl_type])) {
     echo '</tr>';
 }
 ?>
+<?php
+if ($is_myisam_or_aria || $is_isam) {    ?>
+    <tr><td>Enable/Disable KEYS</td>
+        <td><label><input type="radio" name="enable_keys" value="" checked="checked" />Keep</label>
+            <label><input type="radio" name="enable_keys" value="ENABLE" />Enable</label>
+        <label><input type="radio" name="enable_keys" value="DISABLE" />Disable</label>
+    </td>
+    </tr><?php
+} ?>
     </table>
 </fieldset>
 <fieldset class="tblFooters">
