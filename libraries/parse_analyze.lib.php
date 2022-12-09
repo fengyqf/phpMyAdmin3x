@@ -8,6 +8,19 @@ if (! defined('PHPMYADMIN')) {
     exit;
 }
 
+/*
+for window functions in sql, such as row_number()
+*/
+function fsfx__is_ignore_sql_parse($sql_query){
+    //$sql_query=strtolower($sql_query);
+    //window function ...() over()
+    if( preg_match('/over\s*\(/i', $sql_query) ){
+        return true;
+    }
+    return false;
+}
+
+
 /**
  *
  */
@@ -40,7 +53,7 @@ $is_select = isset($analyzed_sql[0]['queryflags']['select_from']);
  * - do not show a table name in the page header
  * - do not display the sub-pages links)
  */
-if ($is_select) {
+if ($is_select && !fsfx__is_ignore_sql_parse($sql_query)) {
     $prev_db = $db;
     if (isset($analyzed_sql[0]['table_ref'][0]['table_true_name'])) {
         $table = $analyzed_sql[0]['table_ref'][0]['table_true_name'];
