@@ -13,13 +13,16 @@ if (! defined('PHPMYADMIN')) {
 }
 
 /**
+    NOT Works in php 8.1+ for super variation can not use as ref param in function
+    $GLOBALS Access Restrictions
+        (https://www.php.net/manual/en/migration81.incompatible.php)
+
  * copy values from one array to another, usually from a superglobal into $GLOBALS
  *
  * @param array   $array      values from
  * @param array   &$target    values to
  * @param bool    $sanitize   prevent importing key names in $_import_blacklist
  * @return bool
- */
 function PMA_recursive_extract($array, &$target, $sanitize = true)
 {
     if (! is_array($array)) {
@@ -52,6 +55,59 @@ function PMA_recursive_extract($array, &$target, $sanitize = true)
     }
     return true;
 }
+ */
+
+/*
+    (php 8.2, super var cann not be use in functions as ref param)
+    infact PMA_recursive_extract() only called in this file,
+    for copy from $_GET,$_POST to $GLOBALS, so fix it
+    $target is useless
+*/
+function PMA_recursive_extract($array, $target, $sanitize = true)
+{
+    if (! is_array($array)) {
+        return false;
+    }
+
+    if ($sanitize) {
+        $valid_variables = preg_replace($GLOBALS['_import_blacklist'], '',
+            array_keys($array));
+        $valid_variables = array_unique($valid_variables);
+    } else {
+        $valid_variables = array_keys($array);
+    }
+
+    foreach ($valid_variables as $key) {
+        if (strlen($key) === 0) {
+            continue;
+        }
+        if (is_array($array[$key])) {
+            unset($GLOBALS[$key]);
+            $txv=array($key => NULL,);   // to extract value
+            PMA_recursive_extract_rev($array[$key], $txv[$key], false);
+            $GLOBALS[$key]=$txv[$key];
+        } else {
+            $GLOBALS[$key] = $array[$key];
+        }
+    }
+    return true;
+}
+
+function PMA_recursive_extract_rev($array,&$target,$sanitize=false)
+{
+    foreach ($array as $key => $value ) {
+
+        if (is_array($array[$key])) {
+            unset($target[$key]);
+            PMA_recursive_extract_rev($array[$key], $target[$key], false);
+        } else {
+            $target[$key] = $array[$key];
+        }
+    }
+    return true;
+}
+
+
 
 
 /**
