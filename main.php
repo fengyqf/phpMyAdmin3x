@@ -125,11 +125,24 @@ echo '  <ul>';
 echo '<li id="li_mysql_variables">';
 echo '<a href="main.php?clear_pma_cache=1&'.$common_url_query.'" title="Clear cache when the Database Server changed">Clear PMA Cache</a>';
 
+if(PMA_isSuperuser() && isset($GLOBALS['cfg']['Server']['debug']) && $GLOBALS['cfg']['Server']['debug']=='debug' ){
+    echo ' [session_start_memory: '.fsfx_h_size($GLOBALS['session_start_memory']).']';
+    echo '  <a href="main.php?clear_pma_cache=999&'.$common_url_query.'">Clear PMA errors in session</a>';
+    // Debug variable
+    echo fsfx_var_dump('_SESSION');
+}
+
 // clean cached for  libraries/common.lib.php//PMA_cache...()
 if(isset($_GET['clear_pma_cache'])){
-    PMA_cacheDestroy();
-    echo '<div class="success">All cache cleaned for all MySQL server.</div>';
+    if($_GET['clear_pma_cache']==999 ? : false){
+        PMA_cacheDestroy($clear_errors=true);
+        echo '<div class="success">All cache and errors cleaned for all MySQL server.</div>';
+    }else{
+        PMA_cacheDestroy($clear_errors=false);
+        echo '<div class="success">All cache cleaned for all MySQL server.</div>';
+    }
 }
+
 echo '</li>';
 echo '</ul>';
 echo '</div>';

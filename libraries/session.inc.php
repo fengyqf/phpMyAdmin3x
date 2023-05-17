@@ -86,7 +86,9 @@ if (! isset($_COOKIE[$session_name])) {
     }
     unset($orig_error_count);
 } else {
+    $GLOBALS['session_start_memory']=memory_get_usage();
     session_start();
+    $GLOBALS['session_start_memory'] = memory_get_usage() - $GLOBALS['session_start_memory'];
 }
 
 /**

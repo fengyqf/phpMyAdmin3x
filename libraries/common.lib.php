@@ -2853,9 +2853,12 @@ function PMA_cacheSet($var, $val = null, $server = 0)
 }
 
 // fsfx, clear cache for all $server, only used in main.php
-function PMA_cacheDestroy()
+function PMA_cacheDestroy($clear_errors=false)
 {
     unset($_SESSION['cache']);
+    if($clear_errors){
+        unset($_SESSION['errors']);
+    }
 }
 
 
@@ -3856,6 +3859,110 @@ function PMA_parseEnumSetValues($definition, $escapeHtml = true)
         }
     }
     return $values;
+}
+
+
+function fsfx_h_size($size=0,$unit='')
+{
+    if( ($size > 1048576 && $unit=='') || $unit=='M'|| $unit=='m'){
+        $label=round($size/1048576,2).' MB';
+    }elseif( ($size > 1024 && $unit=='') || $unit=='K'|| $unit=='k'){
+        $label=round($size/1024,2).' KB';
+    }else{
+        $label=$size.' Bytes';
+    }
+    return $label;
+}
+
+/**
+ * output a variable especially large mixed array, level by level
+ *
+ * @param string $varname The name of var to output, super Global var included
+ *
+ * @return string html
+
+ * eg.
+ *    echo fsfx_var_dump('_SESSION');
+ *    echo fsfx_var_dump('foobar');
+
+ */
+function fsfx_var_dump($varname)
+{
+    $url='?'.$_SERVER['QUERY_STRING'];
+    if(($pos=strpos($url,'&fxvpath='))!==false){
+        $pos2=strpos($url,'&',$pos+1);
+        if($pos2===false){
+            $url=substr($url,0,$pos);
+        }else{
+            $url=substr($url,0,$pos).substr($url,$pos2);
+        }
+    }
+    $buff='';
+    #$buff.= "<li> session_start_memory: <b>".fsfx_h_size($GLOBALS['session_start_memory'])."</b></li>";
+
+    if($varname=='GLOBALS'){
+        $value=$GLOBALS;
+    }elseif($varname=='_SERVER'){
+        $value=$_SERVER;
+    }elseif($varname=='_GET'){
+        $value=$_GET;
+    }elseif($varname=='_POST'){
+        $value=$_POST;
+    }elseif($varname=='_FILES'){
+        $value=$_FILES;
+    }elseif($varname=='_COOKIE'){
+        $value=$_COOKIE;
+    }elseif($varname=='_SESSION'){
+        $value=$_SESSION;
+    }else{
+        $value=$$varname;
+    }
+
+    $up=$url."&fxvpath=";
+    $buff.= "<li>FS Dump <a href='".$up."'><b>".$varname."</b></a> (<dfn title='estimate size by serialized string length, real memory useage will be much larger. same as later.'>".fsfx_h_size(strlen(serialize($value))).'</dfn>) ';
+    if(!isset($_GET['fxvpath'])){
+        return $buff;
+    }
+    $paths=explode('/',$_GET['fxvpath']);
+    foreach($paths as $p){
+        if($p){
+            if(is_array($value)){
+                $value=$value[$p];
+            }elseif(is_object($value)){
+                $value=$value->$p;
+            }
+            $up .= ("/".$p);
+            $buff.= "/<a href='".$up."'>".$p."</a>(".fsfx_h_size(strlen(serialize($value))).') ';
+        }
+    }
+    $buff.= "</li>";
+    if(is_array($value) || is_object($value)){
+        foreach($value as $k => $v){
+            $size=strlen(serialize($v));
+            if(is_array($v)){
+                $type='array('.count($v).')';
+            }elseif(is_string($v)){
+                $type='String('.strlen($v).')';
+            }else{
+                $type=gettype($v);
+            }
+            $buff.= "<li>  - [<a href='".$url."&fxvpath=".(isset($_GET['fxvpath'])? urlencode($_GET['fxvpath']) : '').'/'.urlencode($k)."'>".$k."</a>]{".$type."}: ";
+            if(is_string($v)||is_int($v)||is_float($v)||is_bool($v)||is_null($v) ){
+                $buff.=print_r($v,true);
+            }else{
+                $buff.=fsfx_h_size($size);
+            }
+            $buff.="</li>";
+        }
+    }else{
+        $size=strlen(serialize($value));
+        if($size < 10240){
+            $buff.= "<li>  * {".gettype($value)."}: ".print_r($value,true)."</li>";
+        }else{
+            $buff.= "<li>  * {".gettype($value)."}: ".fsfx_h_size($size)."</li>";
+        }
+    }
+    return $buff;
 }
 
 ?>
