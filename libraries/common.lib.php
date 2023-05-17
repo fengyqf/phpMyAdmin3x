@@ -2852,6 +2852,13 @@ function PMA_cacheSet($var, $val = null, $server = 0)
     $_SESSION['cache']['server_' . $server][$var] = $val;
 }
 
+// fsfx, clear cache for all $server, only used in main.php
+function PMA_cacheDestroy()
+{
+    unset($_SESSION['cache']);
+}
+
+
 /**
  * Removes cached information from the session
  *
