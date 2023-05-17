@@ -43,7 +43,7 @@ function PMA_createOpenDocument($mime, $data)
             . '<office:meta>'
                 . '<meta:generator>phpMyAdmin ' . PMA_VERSION . '</meta:generator>'
                 . '<meta:initial-creator>phpMyAdmin ' . PMA_VERSION . '</meta:initial-creator>'
-                . '<meta:creation-date>' . strftime('%Y-%m-%dT%H:%M:%S') . '</meta:creation-date>'
+                . '<meta:creation-date>' . date('c') . '</meta:creation-date>'
             . '</office:meta>'
         . '</office:document-meta>',
         'meta.xml');

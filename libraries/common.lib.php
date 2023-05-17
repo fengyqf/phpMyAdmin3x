@@ -1600,75 +1600,13 @@ function PMA_extractValueFromFormattedSize($formatted_size)
  */
 function PMA_localisedDate($timestamp = -1, $format = '')
 {
-    $month = array(
-        /* l10n: Short month name */
-        __('Jan'),
-        /* l10n: Short month name */
-        __('Feb'),
-        /* l10n: Short month name */
-        __('Mar'),
-        /* l10n: Short month name */
-        __('Apr'),
-        /* l10n: Short month name */
-        _pgettext('Short month name', 'May'),
-        /* l10n: Short month name */
-        __('Jun'),
-        /* l10n: Short month name */
-        __('Jul'),
-        /* l10n: Short month name */
-        __('Aug'),
-        /* l10n: Short month name */
-        __('Sep'),
-        /* l10n: Short month name */
-        __('Oct'),
-        /* l10n: Short month name */
-        __('Nov'),
-        /* l10n: Short month name */
-        __('Dec'));
-    $day_of_week = array(
-        /* l10n: Short week day name */
-        _pgettext('Short week day name', 'Sun'),
-        /* l10n: Short week day name */
-        __('Mon'),
-        /* l10n: Short week day name */
-        __('Tue'),
-        /* l10n: Short week day name */
-        __('Wed'),
-        /* l10n: Short week day name */
-        __('Thu'),
-        /* l10n: Short week day name */
-        __('Fri'),
-        /* l10n: Short week day name */
-        __('Sat'));
-
-    if ($format == '') {
-        /* l10n: See http://www.php.net/manual/en/function.strftime.php */
-        $format = __('%B %d, %Y at %I:%M %p');
-        //patch for win
-        $fs_ver=explode('.',PHP_VERSION);
-        if( $fs_ver[0] > 5 or ($fs_ver[0] = 5 && $fs_ver[1] >= 4) ){
-            if(strtoupper(substr(PHP_OS, 0, 3)) === 'WIN'){
-                $format = '%Y-%m-%d %H:%M:%S';
-            }
-        }
-    }
+    /* original strftime deprecated：     $format = __('%B %d, %Y at %I:%M %p'); */
 
     if ($timestamp == -1) {
         $timestamp = time();
     }
-
-    $date = preg_replace(
-        '@%[aA]@',
-        $day_of_week[(int)strftime('%w', $timestamp)],
-        $format
-    );
-    $date = preg_replace(
-        '@%[bB]@',
-        $month[(int)strftime('%m', $timestamp)-1],
-        $date
-    );
-
-    return strftime($date, $timestamp);
+    // use MySQL datetime style, for strftime() deprecation and ugly local style
+    return date('Y-m-d H:i:s', $timestamp);
 } // end of the 'PMA_localisedDate()' function
 
 
@@ -3184,7 +3122,8 @@ function PMA_expandUserString($string, $escape = null, $updates = array())
     }
 
     /* Do the replacement */
-    return strtr(strftime($string), $replace);
+    // strange to use strftime() here, origina: strtr(strftime($string), $replace);
+    return strtr($string, $replace);
 }
 
 /**
