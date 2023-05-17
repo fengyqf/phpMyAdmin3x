@@ -66,7 +66,7 @@ $cfg['QueryWindowSize']['Width'] = 1200;
 $cfg['QueryWindowSize']['Height'] = 400;
 
 //display errors, useful for debug
-//$cfg['Error_Handler']['display'] = true;
+//$cfg['Error_Handler']['display'] = 20;  // display count or true(default 20)
 
 
 /*  ** put your addition configure into  ./config_patch.inc.php, such as:
