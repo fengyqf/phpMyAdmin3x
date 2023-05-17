@@ -31,6 +31,8 @@
  */
 function PMA_generate_common_hidden_inputs($db = '', $table = '', $indent = 0, $skip = array())
 {
+    if($db===null)      { $db='';       }
+    if($table===null)   { $table='';    }
     if (is_array($db)) {
         $params  =& $db;
         $_indent = empty($table) ? $indent : $table;
@@ -245,7 +247,7 @@ function PMA_generate_common_url()
         return '';
     }
 
-    $query = $questionmark . http_build_query($params, null, $separator);
+    $query = $questionmark . http_build_query($params, '', $separator);
 
     if ($encode === 'html') {
         $query = htmlspecialchars($query);

@@ -240,7 +240,7 @@ if (isset($plugin_list)) {
      *
      * @access public
      */
-    function PMA_exportStructure($db, $table, $crlf, $error_url, $do_relation = false, $do_comments = false, $do_mime = false, $dates = false, $export_mode, $export_type)
+    function PMA_exportStructure($db, $table, $crlf, $error_url, $do_relation = false, $do_comments = false, $do_mime = false, $dates = false, $export_mode=null, $export_type=null)
     {
         global $cfgRelation;
 
