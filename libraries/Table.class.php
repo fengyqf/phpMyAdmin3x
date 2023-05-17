@@ -257,7 +257,7 @@ class PMA_Table
         foreach ($create_options as $each_create_option) {
             $each_create_option = explode('=', $each_create_option);
             if (isset($each_create_option[1])) {
-                $this->set($$each_create_option[0], $each_create_option[1]);
+                $this->set(${$each_create_option[0]}, $each_create_option[1]);
             }
         }
         return true;
