@@ -123,11 +123,12 @@ if ($server > 0
 echo '<div class="group">';
 echo '  <ul>';
 echo '<li id="li_mysql_variables">';
-echo '<a href="main.php?clear_pma_cache=1&'.$common_url_query.'">Clear PMA Cache</a>';
+echo '<a href="main.php?clear_pma_cache=1&'.$common_url_query.'" title="Clear cache when the Database Server changed">Clear PMA Cache</a>';
+
 // clean cached for  libraries/common.lib.php//PMA_cache...()
 if(isset($_GET['clear_pma_cache'])){
-    unset($_SESSION['cache']);
-    echo '<div class="success">All cache cleaned for each MySQL server.</div>';
+    PMA_cacheDestroy();
+    echo '<div class="success">All cache cleaned for all MySQL server.</div>';
 }
 echo '</li>';
 echo '</ul>';
