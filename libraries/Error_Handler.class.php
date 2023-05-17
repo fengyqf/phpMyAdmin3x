@@ -265,6 +265,12 @@ class PMA_Error_Handler
     public function dispErrors()
     {
         if ($GLOBALS['cfg']['Error_Handler']['display']) {
+            if($GLOBALS['cfg']['Error_Handler']['display'] === true){
+                $cnt=20;
+            }else{
+                $cnt=(int)($GLOBALS['cfg']['Error_Handler']['display']);
+            }
+            $i=0;
             foreach ($this->getErrors() as $error) {
                 if ($error instanceof PMA_Error) {
                     if (! $error->isDisplayed()) {
@@ -273,7 +279,11 @@ class PMA_Error_Handler
                 } else {
                     var_dump($error);
                 }
+                if((++$i) >= $cnt){
+                    break;
+                }
             }
+            echo '<li>top '.$i.' of '.$this->countErrors().' error displayed.</li>';
         } else {
             $this->dispUserErrors();
         }
