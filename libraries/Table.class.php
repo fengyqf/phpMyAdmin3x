@@ -366,7 +366,7 @@ class PMA_Table
     static function generateFieldSpec($name, $type, $length = '', $attribute = '',
         $collation = '', $null = false, $default_type = 'USER_DEFINED',
         $default_value = '', $extra = '', $comment = '',
-        &$field_primary, $index)
+        &$field_primary=null, $index=null)
     {
 
         $is_timestamp = strpos(strtoupper($type), 'TIMESTAMP') !== false;
@@ -573,7 +573,7 @@ class PMA_Table
      */
     static public function generateAlter($oldcol, $newcol, $type, $length,
         $attribute, $collation, $null, $default_type, $default_value,
-        $extra, $comment = '', &$field_primary, $index, $default_orig)
+        $extra, $comment = '', &$field_primary=null, $index=null, $default_orig=null)
     {
         return PMA_backquote($oldcol) . ' '
             . PMA_Table::generateFieldSpec(

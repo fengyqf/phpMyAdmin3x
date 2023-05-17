@@ -315,7 +315,7 @@ require_once './libraries/List.class.php';
      *
      * @return  string  html code list
      */
-    public function getHtmlListGrouped($selected = '', $offset, $count)
+    public function getHtmlListGrouped($selected = '', $offset=null, $count=null)
     {
         if (true === $selected) {
             $selected = $this->getDefault();
@@ -371,7 +371,7 @@ require_once './libraries/List.class.php';
      *
      * @return  string  html code select
      */
-    public function getHtmlSelectGrouped($selected = '', $offset, $count)
+    public function getHtmlSelectGrouped($selected = '', $offset=null, $count=null)
     {
         if (true === $selected) {
             $selected = $this->getDefault();

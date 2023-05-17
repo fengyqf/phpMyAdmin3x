@@ -1006,7 +1006,7 @@ if (isset($plugin_list)) {
      *
      * @access  public
      */
-    function PMA_exportStructure($db, $table, $crlf, $error_url, $relation = false, $comments = false, $mime = false, $dates = false, $export_mode, $export_type)
+    function PMA_exportStructure($db, $table, $crlf, $error_url, $relation = false, $comments = false, $mime = false, $dates = false, $export_mode=null, $export_type=null)
     {
         $formatted_table_name = (isset($GLOBALS['sql_backquotes']))
                               ? PMA_backquote($table)
