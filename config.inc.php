@@ -65,6 +65,10 @@ $cfg['pinned_collations'] = array(
 $cfg['QueryWindowSize']['Width'] = 1200;
 $cfg['QueryWindowSize']['Height'] = 400;
 
+//display errors, useful for debug
+//$cfg['Error_Handler']['display'] = true;
+
+
 /*  ** put your addition configure into  ./config_patch.inc.php, such as:
 
  *   user/password for the default mysql-server
