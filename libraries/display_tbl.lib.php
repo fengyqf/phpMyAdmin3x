@@ -424,7 +424,7 @@ function PMA_displayTableNavigation($pos_next, $pos_prev, $sql_query, $id_for_di
       // (this means we can't validate the upper limit ?>
     <td class="navigation_goto">
         <form action="sql.php" method="post"
-    onsubmit="return (checkFormElementInRange(this, 'session_max_rows', '<?php echo str_replace('\'', '\\\'', __('%d is not valid row number.')); ?>', 1) &amp;&amp; checkFormElementInRange(this, 'pos', '<?php echo str_replace('\'', '\\\'', __('%d is not valid row number.')); ?>', 0<?php echo $unlim_num_rows > 0 ? ',' . $unlim_num_rows - 1 : ''; ?>))">
+    onsubmit="return (checkFormElementInRange(this, 'session_max_rows', '<?php echo str_replace('\'', '\\\'', __('%d is not valid row number.')); ?>', 1) &amp;&amp; checkFormElementInRange(this, 'pos', '<?php echo str_replace('\'', '\\\'', __('%d is not valid row number.')); ?>', 0<?php echo $unlim_num_rows > 0 ? ','.($unlim_num_rows-1) : ''; ?>))">
             <?php echo PMA_generate_common_hidden_inputs($db, $table); ?>
             <input type="hidden" name="sql_query" value="<?php echo $html_sql_query; ?>" />
             <input type="hidden" name="goto" value="<?php echo $goto; ?>" />
