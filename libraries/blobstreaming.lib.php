@@ -107,7 +107,7 @@ function checkBLOBStreamingPlugins()
 
             foreach ($existing_plugins as $one_existing_plugin) {
                 // check if required plugins exist
-                if ( strtolower($one_existing_plugin['Library']) == 'libpbms.so'
+                if ($one_existing_plugin['Library'] && strtolower($one_existing_plugin['Library']) == 'libpbms.so'
                     && $one_existing_plugin['Status'] == "ACTIVE"
                 ) {
                     $has_blobstreaming = true;

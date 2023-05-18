@@ -13,7 +13,7 @@
 require './lib/common.inc.php';
 
 $page = filter_input(INPUT_GET, 'page');
-$page = preg_replace('/[^a-z]/', '', $page);
+$page = (!$page) ? '' : preg_replace('/[^a-z]/', '', $page);
 if ($page === '') {
     $page = 'index';
 }
@@ -24,7 +24,7 @@ if (!file_exists("./setup/frames/$page.inc.php")) {
 
 // Handle done action info
 $action_done = filter_input(INPUT_GET, 'action_done');
-$action_done = preg_replace('/[^a-z_]/', '', $action_done);
+$action_done = (!$action_done) ? '' : preg_replace('/[^a-z_]/', '', $action_done);
 
 // send no-cache headers
 require './libraries/header_http.inc.php';

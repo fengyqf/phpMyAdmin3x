@@ -251,6 +251,10 @@ class PMA_Error extends PMA_Message
     public function displayBacktrace()
     {
         foreach ($this->getBacktrace() as $step) {
+            if(!isset($step['file'])){   $step['file']='';   }
+            if(!isset($step['line'])){   $step['line']='';   }
+            if(!isset($step['type'])){   $step['type']='';   }
+            if(!isset($step['function'])){   $step['function']='';   }
             echo PMA_Error::relPath($step['file']) . '#' . $step['line'] . ': ';
             if (isset($step['class'])) {
                 echo $step['class'] . $step['type'];

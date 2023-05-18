@@ -505,13 +505,13 @@ class PMA_Index
                     $r .= ' (' . $column->getSubPart() . ')';
                 }
                 $r .= '</td>';
-                $r .= '<td>' . htmlspecialchars($column->getCardinality()) . '</td>';
-                $r .= '<td>' . htmlspecialchars($column->getCollation()) . '</td>';
-                $r .= '<td>' . htmlspecialchars($column->getNull(true)) . '</td>';
+                $r .= '<td>' . htmlspecialchars((string)($column->getCardinality())) . '</td>';
+                $r .= '<td>' . htmlspecialchars((string)($column->getCollation())) . '</td>';
+                $r .= '<td>' . htmlspecialchars((string)($column->getNull(true))) . '</td>';
 
                 if ($column->getSeqInIndex() == 1) {
                     $r .= '<td ' . $row_span . '>'
-                        . htmlspecialchars($index->getComments()) . '</td>';
+                        . htmlspecialchars((string)($index->getComments())) . '</td>';
                 }
                 $r .= '</tr>';
             } // end foreach $index['Sequences']

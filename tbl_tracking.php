@@ -278,13 +278,13 @@ if (isset($_REQUEST['snapshot'])) {
         <tr class="noclick <?php echo $style; ?>">
             <?php
             if ($field['Key'] == 'PRI') {
-                echo '<td><b><u>' . htmlspecialchars($field['Field']) . '</u></b></td>' . "\n";
+                echo '<td><b><u>' . htmlspecialchars((string)($field['Field'])) . '</u></b></td>' . "\n";
             } else {
-                echo '<td><b>' . htmlspecialchars($field['Field']) . '</b></td>' . "\n";
+                echo '<td><b>' . htmlspecialchars((string)($field['Field'])) . '</b></td>' . "\n";
             }
             ?>
-            <td><?php echo htmlspecialchars($field['Type']);?></td>
-            <td><?php echo htmlspecialchars($field['Collation']);?></td>
+            <td><?php echo htmlspecialchars((string)($field['Type']));?></td>
+            <td><?php echo htmlspecialchars((string)($field['Collation']));?></td>
             <td><?php echo (($field['Null'] == 'YES') ? __('Yes') : __('No')); ?></td>
             <td><?php
             if (isset($field['Default'])) {
@@ -293,7 +293,7 @@ if (isset($_REQUEST['snapshot'])) {
                     // here, $field['Default'] contains something like b'010'
                     echo PMA_convert_bit_default_value($field['Default']);
                 } else {
-                    echo htmlspecialchars($field['Default']);
+                    echo htmlspecialchars((string)($field['Default']));
                 }
             } else {
                 if ($field['Null'] == 'YES') {
@@ -302,8 +302,8 @@ if (isset($_REQUEST['snapshot'])) {
                     echo '<i>' . _pgettext('None for default', 'None') . '</i>';
                 }
             } ?></td>
-            <td><?php echo htmlspecialchars($field['Extra']);?></td>
-            <td><?php echo htmlspecialchars($field['Comment']);?></td>
+            <td><?php echo htmlspecialchars((string)($field['Extra']));?></td>
+            <td><?php echo htmlspecialchars((string)($field['Comment']));?></td>
         </tr>
 <?php
             if ($style == 'even') {
@@ -349,15 +349,15 @@ if (isset($_REQUEST['snapshot'])) {
             }
 ?>
             <tr class="noclick <?php echo $style; ?>">
-                <td><b><?php echo htmlspecialchars($index['Key_name']);?></b></td>
-                <td><?php echo htmlspecialchars($index['Index_type']);?></td>
+                <td><b><?php echo htmlspecialchars((string)($index['Key_name']));?></b></td>
+                <td><?php echo htmlspecialchars((string)($index['Index_type']));?></td>
                 <td><?php echo $str_unique;?></td>
                 <td><?php echo $str_packed;?></td>
-                <td><?php echo htmlspecialchars($index['Column_name']);?></td>
-                <td><?php echo htmlspecialchars($index['Cardinality']);?></td>
-                <td><?php echo htmlspecialchars($index['Collation']);?></td>
-                <td><?php echo htmlspecialchars($index['Null']);?></td>
-                <td><?php echo htmlspecialchars($index['Comment']);?></td>
+                <td><?php echo htmlspecialchars((string)($index['Column_name']));?></td>
+                <td><?php echo htmlspecialchars((string)($index['Cardinality']));?></td>
+                <td><?php echo htmlspecialchars((string)($index['Collation']));?></td>
+                <td><?php echo htmlspecialchars((string)($index['Null']));?></td>
+                <td><?php echo htmlspecialchars((string)($index['Comment']));?></td>
             </tr>
 <?php
             if ($style == 'even') {
@@ -645,7 +645,9 @@ $sql_result = PMA_query_as_controluser($sql_query);
 
 $last_version = 0;
 $maxversion = PMA_DBI_fetch_array($sql_result);
-$last_version = $maxversion['version'];
+if(isset($maxversion['version'])){
+    $last_version = $maxversion['version'];
+}
 
 if ($last_version > 0) {
 ?>
