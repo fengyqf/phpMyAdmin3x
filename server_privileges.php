@@ -452,6 +452,7 @@ function PMA_displayPrivTable($db = '*', $table = '*', $submit = true)
         $row = PMA_DBI_fetch_single_row($sql_query);
     }
     if (empty($row)) {
+        $row=array();
         if ($table == '*') {
             if ($db == '*') {
                 $sql_query = 'SHOW COLUMNS FROM `mysql`.`user`;';
@@ -904,8 +905,8 @@ function PMA_displayLoginInformationFields($mode = 'new')
        .'';
     if(PMA_MYSQL_INT_VERSION >= 50122){
         $orig_auth_plugin = getCurrentAuthenticationPlugin($mode,
-                $GLOBALS['username'],
-                $GLOBALS['hostname']
+                isset($GLOBALS['username']) ? $GLOBALS['username'] : null,
+                isset($GLOBALS['hostname']) ? $GLOBALS['hostname'] : null
             );
         $buff=getHtmlForAuthPluginsDropdown($orig_auth_plugin, $mode=$mode, $versions = 'new');
         $buff='<div class="item">' . "\n"

@@ -370,7 +370,7 @@ while (!($finished && $i >= $len) && !$error && !$timeout_passed) {
             $len = strlen($buffer);
             $i = 0;
             $lasti = -1;
-            $ch = $buffer[0];
+            $ch = (strlen($buffer)>=1) ? $buffer[0] : null;
         }
     } // End of parser loop
 } // End of import loop

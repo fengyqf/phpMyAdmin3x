@@ -1727,8 +1727,8 @@ function PMA_generate_html_tab($tab, $url_params = array(), $base_dir='')
  */
 function PMA_generate_html_tabs($tabs, $url_params, $base_dir='', $menu_id='topmenu')
 {
-    $table=$GLOBALS['table'];
-    $db=$GLOBALS['db'];
+    $table = isset($GLOBALS['table']) ? $GLOBALS['table'] : '';
+    $db    = isset($GLOBALS['db'])    ? $GLOBALS['db']    : '';
     $tab_navigation = '<div id="' . htmlentities($menu_id) . 'container" class="menucontainer">'
         .'<ul id="' . htmlentities($menu_id) . '">';
 

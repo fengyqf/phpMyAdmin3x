@@ -28,6 +28,7 @@ $chg_evt_handler = (PMA_USR_BROWSER_AGENT == 'IE' && PMA_USR_BROWSER_VER >= 5)
     <fieldset id="fieldset_change_password">
         <legend><?php echo __('Change password'); ?></legend>
 <?php
+$mode= 'change';
 if(PMA_MYSQL_INT_VERSION >= 50122 && function_exists('getCurrentAuthenticationPlugin')){
     $orig_auth_plugin = getCurrentAuthenticationPlugin($mode,
             $GLOBALS['username'],
