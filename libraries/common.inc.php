@@ -292,7 +292,10 @@ if (empty($__redirect) && !defined('PMA_NO_VARIABLES_IMPORT')) {
  *
  * @todo need to decide how we should handle this (without @)
  */
-date_default_timezone_set(@date_default_timezone_get());
+//date_default_timezone_set(@date_default_timezone_get());
+if( ! ini_get('date.timezone') ){
+    date_default_timezone_set('GMT');
+}
 
 /******************************************************************************/
 /* parsing configuration file                         LABEL_parsing_config_file      */
