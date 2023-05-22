@@ -30,12 +30,11 @@ require './libraries/StorageEngine.class.php';
  * Displays the links
  */
 require './libraries/server_links.inc.php';
-
 /**
  * Did the user request information about a certain storage engine?
  */
-if (empty($_REQUEST['engine'])
- || ! PMA_StorageEngine::isValid($_REQUEST['engine'])) {
+if (( empty($_REQUEST['engine']) || ! PMA_StorageEngine::isValid($_REQUEST['engine']) )
+        && !isset($_GET['plugin']) ) {
 
     /**
      * Displays the sub-page heading
@@ -95,6 +94,95 @@ if (empty($_REQUEST['engine'])
    unset($odd_row, $engine, $details);
     echo '</tbody>' . "\n"
        . '</table>' . "\n";
+
+
+    // --------- plugins list
+    echo '<h2>' . "\n"
+       . ($GLOBALS['cfg']['MainPageIconic'] ? PMA_getImage('b_plugin.png') : '')
+       . "\n" . __('Plugins') . "\n"
+       . '</h2>' . "\n";
+
+    $tbheader= '<table class="noclick">' . "\n"
+       . '<thead>' . "\n"
+       . '<tr><th>' . __('Plugins') . '</th>' . "\n"
+       . '    <th>' . __('Description') . '</th>' . "\n"
+       . '    <th>' . __('Version') . '</th>' . "\n"
+       . '    <th>' . __('Author') . '</th>' . "\n"
+       . '    <th>' . __('License') . '</th>' . "\n"
+       . '</tr>' . "\n"
+       . '</thead>' . "\n"
+       . '<tbody>' . "\n";
+    $tbfooter= '</tbody>' . "\n"  . '</table>' . "\n" . '</div>' . "\n";
+    $odd_row = true;
+    $lasttype='';
+    foreach (PMA_StorageEngine::getPlugins() as $plugin => $details) {
+        if($lasttype!=$details['PLUGIN_TYPE']){
+            if($lasttype!=''){
+                echo $tbfooter;
+                echo '</div>'."\n";
+            }
+            echo '<div class="group"><h2>'.$details['PLUGIN_TYPE'].'</h2>'."\n";
+            echo $tbheader;
+        }
+        echo '<tr class="'
+           . ($odd_row ? 'odd' : 'even')
+           . ($details['PLUGIN_STATUS'] == 'DISABLED'
+                ? ' disabled'
+                : '')
+           . '">' . "\n"
+           . '    <td><a href="./server_engines.php'
+           . PMA_generate_common_url(array('plugin' => $details['PLUGIN_NAME'])) . '">' . "\n"
+           . '            ' . htmlspecialchars($details['PLUGIN_NAME']) . "\n"
+           . '        </a></td>' . "\n"
+           . '    <td>' . htmlspecialchars($details['PLUGIN_DESCRIPTION']) . '</td>' . "\n"
+           . '    <td>' . htmlspecialchars($details['PLUGIN_VERSION']) . '</td>' . "\n"
+           . '    <td>' . htmlspecialchars($details['PLUGIN_AUTHOR']) . '</td>' . "\n"
+           . '    <td>' . htmlspecialchars($details['PLUGIN_LICENSE']) . '</td>' . "\n"
+           . '</tr>' . "\n";
+        $odd_row = !$odd_row;
+        $lasttype=$details['PLUGIN_TYPE'];
+    }
+   unset($odd_row, $plugin, $details);
+   echo $tbfooter;
+    // --------- plugins list end
+}elseif(isset($_GET['plugin'])){
+    // display plugin details, infact all columns in the SHOW PLUGINS
+    $plugin_name=$_REQUEST['plugin'];
+    $plugin_details=PMA_StorageEngine::getPlugins($plugin_name);
+    echo '<h2>' . "\n"
+       . ($GLOBALS['cfg']['MainPageIconic'] ? PMA_getImage('b_plugin.png') : '')
+       . "\n" . __('Plugins') . "\n"
+       . '</h2>' . "\n";
+    echo '<div class="group"><h2>'.$plugin_name.'</h2>'."\n";
+
+    $tbheader= '<table class="noclick">' . "\n"
+       . '<thead>' . "\n"
+       . '<tr><th>' . __('Column') . '</th>' . "\n"
+       . '    <th>' . __('Value') . '</th>' . "\n"
+       . '</tr>' . "\n"
+       . '</thead>' . "\n"
+       . '<tbody>' . "\n";
+    $tbfooter= '</tbody>' . "\n"  . '</table>' . "\n" . '</div>' . "\n";
+    $odd_row = true;
+    echo $tbheader;
+    if(!$plugin_details){
+        //not exists
+            echo '<tr>' . "\n"
+               . '    <td>Not Found</td>' . "\n"
+               . '    <td>-</td>' . "\n"
+               . '</tr>' . "\n";
+    }else{
+        //output
+        foreach ($plugin_details as $key => $value) {
+            echo '<tr class="'. ($odd_row ? 'odd' : 'even') . '">' . "\n"
+               . '    <td>' . htmlspecialchars((string)$key) . '</td>' . "\n"
+               . '    <td>' . htmlspecialchars((string)$value) . '</td>' . "\n"
+               . '</tr>' . "\n";
+            $odd_row = !$odd_row;
+        }
+    }
+    unset($odd_row, $plugin_details, $key,$value);
+    echo $tbfooter;
 
 } else {
 
