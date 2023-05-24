@@ -33,6 +33,21 @@ function PMA_getSysInfoOs()
 function PMA_getSysInfo()
 {
     $php_os = PMA_getSysInfoOs();
+    switch ($php_os) {
+        case 'Linux':
+            return new PMA_sysinfoLinux();
+            break;
+        case 'WINNT':
+            return new PMA_sysinfoWinnt();
+            break;
+        case 'SunOS':
+            return new PMA_sysinfoSunos();
+            break;
+        default:
+            return new PMA_Sysinfo_Default();
+    }
+    /* -- ugly usage of eval, changes above ref phpMyAdmin-5.2.0-all-languages
+    * \libraries\classes\Server\SysInfo\SysInfo.php::53-77
     $supported = array('Linux', 'WINNT', 'SunOS');
 
     $sysinfo = array();
@@ -42,6 +57,7 @@ function PMA_getSysInfo()
     }
 
     return new PMA_Sysinfo_Default;
+    */
 }
 
 
@@ -84,6 +100,8 @@ class PMA_sysinfoWinnt
             }
             $arrInstance = array();
             foreach ($arrProp as $propItem) {
+                /* -- original, replaced by phpMyAdmin-5.2.0-all-languages\
+                --   libraries\classes\Server\SysInfo\WindowsNt.php::92-102
                 if ( empty($strValue)) {
                     eval("\$value = \$objItem->".$propItem->Name.";");
                     $arrInstance[$propItem->Name] = trim($value);
@@ -92,6 +110,18 @@ class PMA_sysinfoWinnt
                         eval("\$value = \$objItem->".$propItem->Name.";");
                         $arrInstance[$propItem->Name] = trim($value);
                     }
+                }
+                */
+                $name = $propItem->Name;
+                if (! empty($strValue) && ! in_array($name, $strValue)) {
+                    continue;
+                }
+
+                $value = $objItem->$name;
+                if (is_string($value)) {
+                    $arrInstance[$name] = trim($value);
+                } else {
+                    $arrInstance[$name] = $value;
                 }
             }
             $arrData[] = $arrInstance;
