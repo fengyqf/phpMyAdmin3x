@@ -188,11 +188,13 @@ class Advisor
             );
 
             // Replaces external Links with PMA_linkURL() generated links
-            $rule['recommendation'] = preg_replace(
-                '#href=("|\')(https?://[^\1]+)\1#ie',
-                '\'href="\' . PMA_linkURL("\2") . \'"\'',
-                $rule['recommendation']
-            );
+            // re flag of e was DEPRECATED in PHP 5.5.0, and REMOVED as of PHP 7.0.0.
+            // $rule['recommendation'] = preg_replace(
+            //     '#href=("|\')(https?://[^\1]+)\1#ie',
+            //     '\'href="\' . PMA_linkURL("\2") . \'"\'',
+            //     $rule['recommendation']
+            // );
+            $rule['recommendation'] = str_replace('href=','target="_blank" href=',$rule['recommendation']);
             break;
         }
 
