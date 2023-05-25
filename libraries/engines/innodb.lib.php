@@ -271,7 +271,7 @@ class PMA_StorageEngine_innodb extends PMA_StorageEngine
     function getPageStatus()
     {
         return '<pre id="pre_innodb_status">' . "\n"
-            . htmlspecialchars(PMA_DBI_fetch_value('SHOW INNODB STATUS;', 0, 'Status')) . "\n"
+            . htmlspecialchars(PMA_DBI_fetch_value('SHOW ENGINE INNODB STATUS;', 0, 'Status')) . "\n"
             . '</pre>' . "\n";
     }
 
