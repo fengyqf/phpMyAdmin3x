@@ -458,10 +458,12 @@ table .valueHeader {
 table .value {
     text-align:         <?php echo $right; ?>;
     white-space:        normal;
+    overflow-wrap:      anywhere;
 }
 /* IE doesnt handles 'pre' right */
 table [class=value] {
     white-space:        normal;
+    overflow-wrap:      anywhere;
 }
 
 
