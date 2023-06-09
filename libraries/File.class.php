@@ -193,6 +193,9 @@ class PMA_File
      */
     function isUploaded()
     {
+        if(!$this->getName()){
+            return false;
+        }
         return is_uploaded_file($this->getName());
     }
 
@@ -471,7 +474,11 @@ class PMA_File
         // suppress warnings from being displayed, but not from being logged
         // any file access outside of open_basedir will issue a warning
         ob_start();
-        $is_readable = is_readable($this->getName());
+        if(!$this->getName()){
+            $is_readable = false;
+        }else{
+            $is_readable = is_readable($this->getName());
+        }
         ob_end_clean();
         return $is_readable;
     }

@@ -404,7 +404,7 @@ function PMA_getForeigners($db, $table, $column = '', $source = 'both')
             . PMA_backquote($db) . '.' . PMA_backquote($table);
         $show_create_table = PMA_DBI_fetch_value($show_create_table_query, 0, 1);
         $analyzed_sql = PMA_SQP_analyze(PMA_SQP_parse($show_create_table));
-
+        if(isset($analyzed_sql[0]['foreign_keys'])){
         foreach ($analyzed_sql[0]['foreign_keys'] as $one_key) {
             // The analyzer may return more than one column name in the
             // index list or the ref_index_list; if this happens,
@@ -442,6 +442,7 @@ function PMA_getForeigners($db, $table, $column = '', $source = 'both')
                     }
                 }
             }
+        }
         }
     }
 

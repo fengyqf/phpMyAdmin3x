@@ -368,7 +368,9 @@ class PMA_Table
         $default_value = '', $extra = '', $comment = '',
         &$field_primary=null, $index=null)
     {
-
+        if(is_null($field_primary)){
+            $field_primary=array();
+        }
         $is_timestamp = strpos(strtoupper($type), 'TIMESTAMP') !== false;
 
         $query = PMA_backquote($name) . ' ' . $type;

@@ -3735,7 +3735,7 @@ function PMA_analyzeLimitClause($limit_clause)
     $start_and_length = explode(',', str_ireplace('LIMIT', '', $limit_clause));
     return array(
         'start'  => (int)trim($start_and_length[0]),
-        'length' => (int)trim($start_and_length[1])
+        'length' => isset($start_and_length[1]) ? (int)trim($start_and_length[1]) : 0
     );
 }
 
