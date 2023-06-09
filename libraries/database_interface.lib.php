@@ -971,6 +971,13 @@ function PMA_DBI_get_columns_full($database = null, $table = null,
         $columns[$column_name]['PRIVILEGES'] =& $columns[$column_name]['Privileges'];
         $columns[$column_name]['COLUMN_COMMENT'] =& $columns[$column_name]['Comment'];
 
+        if(is_null($columns[$column_name]['COLUMN_TYPE'])){
+            $columns[$column_name]['COLUMN_TYPE']='';
+        }
+        if(is_null($columns[$column_name]['COLLATION_NAME'])){
+            $columns[$column_name]['COLLATION_NAME']='';
+        }
+
         $columns[$column_name]['TABLE_CATALOG'] = null;
         $columns[$column_name]['TABLE_SCHEMA'] = $database;
         $columns[$column_name]['TABLE_NAME'] = $table;

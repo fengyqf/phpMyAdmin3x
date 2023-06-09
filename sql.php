@@ -420,7 +420,7 @@ $full_sql_query = $sql_query;
 // Handle remembered sorting order, only for single table query
 if ($GLOBALS['cfg']['RememberSorting']
     && ! ($is_count || $is_export || $is_func || $is_analyse)
-    && count($analyzed_sql[0]['select_expr']) == 0
+    && is_array($analyzed_sql[0]['select_expr']) && count($analyzed_sql[0]['select_expr']) == 0
     && isset($analyzed_sql[0]['queryflags']['select_from'])
     && count($analyzed_sql[0]['table_ref']) == 1
 ) {

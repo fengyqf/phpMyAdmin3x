@@ -93,7 +93,7 @@ class PMA_StorageEngine
     static public function getHtmlSelect($name = 'engine', $id = null,
       $selected = null, $offerUnavailableEngines = false)
     {
-        $selected   = strtolower($selected);
+        $selected   = is_null($selected) ? '' : strtolower($selected);
         $output     = '<select name="' . $name . '"'
             . (empty($id) ? '' : ' id="' . $id . '"') . '>' . "\n";
 
