@@ -51,6 +51,7 @@ require './libraries/tbl_info.inc.php';
 
 // define some globals here, for improved syntax in the conditionals
 $is_myisam_or_aria = $is_isam = $is_innodb = $is_berkeleydb = $is_aria = $is_pbxt = false;
+$is_engine_empty = false;   // engine is empty when this table is broken need repair
 // set initial value of these globals, based on the current table engine
 PMA_set_global_variables_for_engine($tbl_type);
 
@@ -646,13 +647,14 @@ if ($is_myisam_or_aria || $is_isam) {    ?>
 <ul id="tbl_maintenance" <?php echo ($GLOBALS['cfg']['AjaxEnable'] ? ' class="ajax"' : '');?>>
 <?php
 // Note: BERKELEY (BDB) is no longer supported, starting with MySQL 5.1
-if ($is_myisam_or_aria || $is_innodb || $is_berkeleydb) {
-    if ($is_myisam_or_aria || $is_innodb) {
+if ($is_myisam_or_aria || $is_innodb || $is_berkeleydb || $is_engine_empty) {
+    if ($is_myisam_or_aria || $is_innodb || $is_engine_empty) {
         $this_url_params = array_merge(
             $url_params,
             array(
                 'sql_query' => 'CHECK TABLE ' . PMA_backquote($GLOBALS['table']),
                 'table_maintenance' => 'Go',
+                'display_text' => 'F',
                 )
         );
         ?>
@@ -674,12 +676,13 @@ if ($is_myisam_or_aria || $is_innodb || $is_berkeleydb) {
     </li>
         <?php
     }
-    if ($is_myisam_or_aria || $is_berkeleydb) {
+    if ($is_myisam_or_aria || $is_berkeleydb || $is_engine_empty) {
         $this_url_params = array_merge(
             $url_params,
             array(
                 'sql_query' => 'ANALYZE TABLE ' . PMA_backquote($GLOBALS['table']),
                 'table_maintenance' => 'Go',
+                'display_text' => 'F',
                 )
         );
         ?>
@@ -689,12 +692,13 @@ if ($is_myisam_or_aria || $is_innodb || $is_berkeleydb) {
     </li>
         <?php
     }
-    if ($is_myisam_or_aria && !PMA_DRIZZLE) {
+    if (($is_myisam_or_aria || $is_engine_empty) && !PMA_DRIZZLE) {
         $this_url_params = array_merge(
             $url_params,
             array(
                 'sql_query' => 'REPAIR TABLE ' . PMA_backquote($GLOBALS['table']),
                 'table_maintenance' => 'Go',
+                'display_text' => 'F',
                 )
         );
         ?>
@@ -704,12 +708,13 @@ if ($is_myisam_or_aria || $is_innodb || $is_berkeleydb) {
     </li>
         <?php
     }
-    if (($is_myisam_or_aria || $is_innodb || $is_berkeleydb) && !PMA_DRIZZLE) {
+    if (($is_myisam_or_aria || $is_innodb || $is_berkeleydb || $is_engine_empty) && !PMA_DRIZZLE) {
         $this_url_params = array_merge(
             $url_params,
             array(
                 'sql_query' => 'OPTIMIZE TABLE ' . PMA_backquote($GLOBALS['table']),
                 'table_maintenance' => 'Go',
+                'display_text' => 'F',
                 )
         );
         ?>
@@ -910,6 +915,7 @@ require './libraries/footer.inc.php';
 function PMA_set_global_variables_for_engine($tbl_type)
 {
     global $is_myisam_or_aria, $is_innodb, $is_isam, $is_berkeleydb, $is_aria, $is_pbxt;
+    global $is_engine_empty;
 
     $is_myisam_or_aria = $is_isam = $is_innodb = $is_berkeleydb = $is_aria = $is_pbxt = false;
     $upper_tbl_type = strtoupper($tbl_type);
@@ -922,6 +928,7 @@ function PMA_set_global_variables_for_engine($tbl_type)
     $is_innodb = ($upper_tbl_type == 'INNODB');
     $is_berkeleydb = ($upper_tbl_type == 'BERKELEYDB');
     $is_pbxt = ($upper_tbl_type == 'PBXT');
+    $is_engine_empty = empty($upper_tbl_type);
 }
 
 ?>
