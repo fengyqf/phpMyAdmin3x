@@ -1469,7 +1469,7 @@ if (isset($_REQUEST['change_copy'])) {
  * Updates privileges
  */
 if (! empty($update_privs)) {
-    $db_and_table = PMA_wildcardEscapeForGrant($dbname, (isset($tablename) ? $tablename : ''));
+    $db_and_table = PMA_wildcardEscapeForGrant(isset($dbname) ? $dbname : '', (isset($tablename) ? $tablename : ''));
 
     $sql_query0 = 'REVOKE ALL PRIVILEGES ON ' . $db_and_table
         . ' FROM \'' . PMA_sqlAddSlashes($username) . '\'@\'' . PMA_sqlAddSlashes($hostname) . '\';';
@@ -1525,7 +1525,7 @@ if (! empty($update_privs)) {
         // See https://sourceforge.net/tracker/index.php?func=detail&aid=3285929&group_id=23067&atid=377408
         $sql_query0 = '';
     }
-    if (isset($sql_query1) && ! PMA_DBI_try_query($sql_query1)) {
+    if (isset($sql_query1) && $sql_query1 && ! PMA_DBI_try_query($sql_query1)) {
         // this one may fail, too...
         $sql_query1 = '';
     }
