@@ -2574,7 +2574,7 @@ if (! defined('PMA_MINIMUM_COMMON')) {
                         $close_docu_link = false;
                     } else if ($docu && isset($PMA_SQPdata_functions_docs[$arr[$i]['data']])) {
                         /* Handle multi word statements first */
-                        if (isset($typearr[4]) && $typearr[4] == 'alpha_reservedWord' && $typearr[3] == 'alpha_reservedWord' && isset($PMA_SQPdata_functions_docs[strtoupper($arr[$i]['data'] . '_' . $arr[$i + 1]['data'] . '_' . $arr[$i + 2]['data'])])) {
+                        if (isset($typearr[4]) && $typearr[4] == 'alpha_reservedWord' && $typearr[3] == 'alpha_reservedWord' && isset($arr[$i+1]) && isset($arr[$i+2]) && isset($PMA_SQPdata_functions_docs[strtoupper($arr[$i]['data'] . '_' . $arr[$i + 1]['data'] . '_' . $arr[$i + 2]['data'])])) {
                             $tempname = strtoupper($arr[$i]['data'] . '_' . $arr[$i + 1]['data'] . '_' . $arr[$i + 2]['data']);
                             $before .= PMA_showMySQLDocu('functions', $PMA_SQPdata_functions_docs[$tempname]['link'], false, $PMA_SQPdata_functions_docs[$tempname]['anchor'], true);
                             $close_docu_link = true;
