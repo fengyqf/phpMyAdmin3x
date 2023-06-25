@@ -710,7 +710,7 @@ function PMA_displayPrivTable($db = '*', $table = '*', $submit = true)
         // The "Resource limits" box is not displayed for db-specific privs
         if ($db == '*') {
             echo '    <fieldset>' . "\n"
-               . '        <legend>' . __('Resource limits') . ' (Ignored)</legend>' . "\n"
+               . '        <legend>' . __('Resource limits') . '</legend>' . "\n"
                . '        <p><small><i>' . __('Note: Setting these options to 0 (zero) removes the limit.') . '</i></small></p>' . "\n"
                . '        <div class="item">' . "\n"
                . '            <label for="text_max_questions"><tt><dfn title="'
@@ -1120,9 +1120,33 @@ function getHashedPassword($password)
 
     return $result['password'];
 }
+
+
+function fsfx_mk_resource_option()
+{
+    $cfgs=array(
+        'max_questions'         =>  'MAX_QUERIES_PER_HOUR',
+        'max_connections'       =>  'MAX_CONNECTIONS_PER_HOUR',
+        'max_updates'           =>  'MAX_UPDATES_PER_HOUR',
+        'max_user_connections'  =>  'MAX_USER_CONNECTIONS',
+    );
+    $opts=array();
+    foreach($cfgs as $key => $name){
+        if(isset($_POST[$key])){
+            $val=(int)($_POST[$key]);
+            $opts[] = " {$name} {$val}";
+        }
+    }
+
+    $sql_part="";
+    if($opts){
+        $sql_part="  ".join('',$opts);
+    }
+    return $sql_part;
+}
+
+
 // -----------------------------------------------------------------------------
-
-
 /**
  * Adds a user
  *   (Changes / copies a user, part II)
@@ -1276,12 +1300,28 @@ if (isset($_REQUEST['adduser_submit']) || isset($_REQUEST['change_copy'])) {
             }
         }
         */
-        if (isset($create_user_real)) {
-            $create_user_real .= ';';
-            $create_user_show .= ';';
+
+        $sql_res_opt    =   '';
+        $fsfx_sql_res=fsfx_mk_resource_option();
+        if ((isset($Grant_priv) && $Grant_priv == 'Y') || $fsfx_sql_res ) {
+            if( (PMA_MYSQL_SERVER_TYPE == 'MySQL' && PMA_MYSQL_INT_VERSION >= 80011)
+            ||  (PMA_MYSQL_SERVER_TYPE == 'MariaDB' && PMA_MYSQL_INT_VERSION >= 100400) ) {
+                $sql_res_opt    =   "ALTER USER '".PMA_sqlAddSlashes($username) . '\'@\'' . PMA_sqlAddSlashes($hostname)
+                        . '\' WITH ' . $fsfx_sql_res .';' ;
+            }else{
+                $real_sql_query .= '  WITH GRANT OPTION ' . $fsfx_sql_res;
+                $sql_query      .= '  WITH GRANT OPTION ' . $fsfx_sql_res;
+                $sql_res_opt    =   '';
+            }
+
         }
-        $real_sql_query .= ';';
-        $sql_query .= ';';
+        //print_r($sql_res_opt);
+        if (isset($create_user_real)) {
+            $create_user_real .= ";\n";
+            $create_user_show .= ";\n";
+        }
+        $real_sql_query .= ";\n";
+        $sql_query .= ";\n";
         if (empty($_REQUEST['change_copy'])) {
             $_error = false;
 
@@ -1290,12 +1330,13 @@ if (isset($_REQUEST['adduser_submit']) || isset($_REQUEST['change_copy'])) {
                     $_error = true;
                 }
                 #$sql_query = $create_user_show . $sql_query;
-                $sql_query = $create_user_real . $sql_query;
-                echo '<li>[notice] $sql_query is using $create_user_real </li>';
+                $sql_query = $create_user_real . $sql_query . $sql_res_opt;
+                #echo '<li>[notice] $sql_query is using $create_user_real </li>';
 
             }
 
-            if ($_error || ! PMA_DBI_try_query($real_sql_query)) {
+            if ($_error || ! PMA_DBI_try_query($real_sql_query)
+                        || ( $sql_res_opt && ! PMA_DBI_try_query($sql_res_opt) ) ) {
                 $_REQUEST['createdb'] = false;
                 $message = PMA_Message::rawError(PMA_DBI_getError());
             } else {
@@ -1374,8 +1415,8 @@ if (isset($_REQUEST['adduser_submit']) || isset($_REQUEST['change_copy'])) {
         #echo '<li>$real_sql_query: '.$real_sql_query.'</li>';
         #echo '<li>$queries: '.$queries.'</li>';
         #echo '<li>$queries_for_display: '.$queries_for_display.'</li>';
-        echo '<li>$create_user_real: '.$create_user_real.'</li>';
-        echo '<li>$sql_query: '.$sql_query.'</li>';
+        #echo '<li>$create_user_real: '.$create_user_real.'</li>';
+        #echo '<li>$sql_query: '.$sql_query.'</li>';
         unset($res, $real_sql_query);
     }
 }
@@ -1518,7 +1559,23 @@ if (! empty($update_privs)) {
             }
         }
         */
-        $sql_query2 .= ';';
+
+        $sql_res_opt    =   '';
+        $fsfx_sql_res=fsfx_mk_resource_option();
+        //print_r(PMA_MYSQL_SERVER_TYPE);
+        if ((isset($Grant_priv) && $Grant_priv == 'Y') || $fsfx_sql_res ) {
+            if( (PMA_MYSQL_SERVER_TYPE == 'MySQL' && PMA_MYSQL_INT_VERSION >= 80011)
+            ||  (PMA_MYSQL_SERVER_TYPE == 'MariaDB' && PMA_MYSQL_INT_VERSION >= 100400) ) {
+                $sql_res_opt    =   "ALTER USER '".PMA_sqlAddSlashes($username) . '\'@\'' . PMA_sqlAddSlashes($hostname)
+                        . '\' WITH ' . $fsfx_sql_res .';' ;
+            }else{
+                $sql_query2     .= '  WITH GRANT OPTION ' . $fsfx_sql_res;
+                $sql_res_opt    =   '';
+            }
+
+        }
+
+        $sql_query2 .= ";\n";
     }
     if (! PMA_DBI_try_query($sql_query0)) {
         // This might fail when the executing user does not have ALL PRIVILEGES himself.
@@ -1534,7 +1591,10 @@ if (! empty($update_privs)) {
     } else {
         $sql_query2 = '';
     }
-    $sql_query = $sql_query0 . ' ' . $sql_query1 . ' ' . $sql_query2;
+    if (isset($sql_res_opt) && $sql_res_opt && ! PMA_DBI_try_query($sql_res_opt)) {
+        $sql_res_opt = '';
+    }
+    $sql_query = $sql_query0 . ' ' . $sql_query1 . ' ' . $sql_query2 . ' ' . $sql_res_opt;
     $message = PMA_Message::success(__('You have updated the privileges for %s.'));
     $message->addParam('\'' . htmlspecialchars($username) . '\'@\'' . htmlspecialchars($hostname) . '\'');
 }
