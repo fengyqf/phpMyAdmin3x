@@ -118,11 +118,13 @@ function PMA_generateCharsetDropdownBox($type = PMA_CSDROPDOWN_COLLATION,
     if(isset($GLOBALS['cfg']['pinned_collations']) && is_array($GLOBALS['cfg']['pinned_collations'])){
         $return_str .= '<optgroup label="Pinned" title="Pinned Collations">' . "\n";
         foreach ($GLOBALS['cfg']['pinned_collations'] as $current_collation) {
-            if (!$mysql_collations_available[$current_collation]) {
-                continue;
+            $fsfx_pinned_collation_disable='';
+            if ( !isset($mysql_collations_available[$current_collation]) || !$mysql_collations_available[$current_collation]) {
+                $fsfx_pinned_collation_disable=' disabled';
             }
             $return_str .= '<option value="' . $current_collation
                 . '" title="' . PMA_getCollationDescr($current_collation) . '"'
+                . $fsfx_pinned_collation_disable
                 . ($default == $current_collation ? ' selected="selected"' : '') . '>'
                 . $current_collation . '</option>' . "\n";
             if($default == $current_collation){
@@ -130,6 +132,7 @@ function PMA_generateCharsetDropdownBox($type = PMA_CSDROPDOWN_COLLATION,
             }
         }
         $return_str .= '</optgroup>' . "\n";
+        unset($fsfx_pinned_collation_disable);
     }
     foreach ($mysql_charsets as $current_charset) {
         if (!$mysql_charsets_available[$current_charset]) {
