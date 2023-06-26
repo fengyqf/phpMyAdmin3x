@@ -207,11 +207,24 @@ if ($server > 0 && $GLOBALS['cfg']['ShowServerInfo']) {
         'li_user_info'
     );
 
+    // pma358 is fake to utf-8, read it from variables;
+    // and $mysql_charset_map seems useless;
+    $fsfx_serverCharset=fsfx_get_server_charset();
+    if(array_key_exists($fsfx_serverCharset,$mysql_charset_map)){
+        $fsfx_serverCharset=$mysql_charset_map[$fsfx_serverCharset];
+    }
+    if(isset($mysql_charsets_descriptions[$fsfx_serverCharset])){
+        $fsfx_serverCharset_desp=$mysql_charsets_descriptions[$fsfx_serverCharset];
+    }else{
+        $fsfx_serverCharset_desp=$fsfx_serverCharset;
+    }
     echo '    <li id="li_select_mysql_charset">';
     echo '        ' . __('Server charset') . ': '
        . '        <span xml:lang="en" dir="ltr">'
-       . '           ' . $mysql_charsets_descriptions[$mysql_charset_map['utf-8']] . "\n"
-       . '           (' . $mysql_charset_map['utf-8'] . ')' . "\n"
+       #. '           ' . $mysql_charsets_descriptions[$mysql_charset_map['utf-8']] . "\n"
+       #. '           (' . $mysql_charset_map['utf-8'] . ')' . "\n"
+       . '           ' . $fsfx_serverCharset_desp . "\n"
+       . '           (' . $fsfx_serverCharset . ')' . "\n"
        . '        </span>' . "\n"
        . '    </li>' . "\n";
     echo '  </ul>';
@@ -245,7 +258,7 @@ if ($GLOBALS['cfg']['ShowServerInfo'] || $GLOBALS['cfg']['ShowPhpInfo']) {
     }
 
     if ($cfg['ShowPhpInfo']) {
-        PMA_printListItem(__('Show PHP information'), 'li_phpinfo', './phpinfo.php?' . $common_url_query);
+        PMA_printListItem('PHP '.PHP_VERSION.' - '.__('Show PHP information'), 'li_phpinfo', './phpinfo.php?' . $common_url_query);
     }
     echo '  </ul>';
     echo ' </div>';
@@ -477,6 +490,20 @@ function PMA_printListItem($name, $id = null, $url = null, $mysql_help_page = nu
     }
     echo '</li>';
 }
+
+
+function fsfx_get_server_charset()
+{
+    //[ref pma 5.2.0]  \libraries\classes\Charsets.php::getServerCharset()
+    $sql="SHOW GLOBAL VARIABLES LIKE 'character_set_server';";
+    $serverCharset = PMA_DBI_fetch_value($sql, 0, 1);
+    // MySQL 5.7.8 fallback, issue #15614
+    if (! is_string($serverCharset)) {
+        $serverCharset = PMA_DBI_fetch_value('SELECT @@character_set_server;', 0, 0);
+    }
+    return $serverCharset;
+}
+
 
 /**
  * Displays the footer
