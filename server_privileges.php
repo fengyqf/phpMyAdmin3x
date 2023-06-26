@@ -1069,12 +1069,20 @@ function getCurrentAuthenticationPlugin(
     }
     /* Fallback (standard) value */
     $authentication_plugin = 'mysql_native_password';
-    if (isset($username) && isset($hostname)
-        && $mode == 'change' && 1==2
-    ) {
+    if( $mode == 'change' ) {
+        // get $username $hostname if not set
+        if( !isset($username, $hostname) ){
+            $resultset = PMA_DBI_query("SELECT USER() as cu");
+            $row = PMA_DBI_fetch_assoc($resultset);
+            $cu=explode('@', $row['cu']);
+            $username=$cu[0];
+            $hostname=count($cu)>=2 ? $cu[1] : '';
+        }
+
         $resultset = PMA_DBI_query(
             'SELECT `plugin` FROM `mysql`.`user` WHERE '
-            . '`User` = "' . $username . '" AND `Host` = "' . $hostname . '" LIMIT 1'
+            . '`User` = "' . PMA_sqlAddSlashes($username)
+            . '" AND `Host` = "' . PMA_sqlAddSlashes($hostname) . '" LIMIT 1'
         );
         $row = PMA_DBI_fetch_assoc($resultset);
         // Table 'mysql'.'user' may not exist for some previous
@@ -1082,24 +1090,11 @@ function getCurrentAuthenticationPlugin(
         if (is_array($row) && isset($row['plugin'])) {
             $authentication_plugin = $row['plugin'];
         }
-    } elseif ($mode == 'change') {
-        $resultset = PMA_DBI_query("SELECT USER() as cu");
-        $row = PMA_DBI_fetch_assoc($resultset);
-        $cu=explode('@', $row['cu']);
-        $username=$cu[0];
-        $hostname = $cu[1];
-        $resultset = PMA_DBI_query(
-            'SELECT * FROM `mysql`.`user` WHERE '
-            . '`User` = "' . $username . '" AND `Host` = "' . $hostname . '"'
-        );
-        $row = PMA_DBI_fetch_assoc($resultset);
-        if (is_array($row) && isset($row['plugin'])) {
-            $authentication_plugin = $row['plugin'];
+    } elseif (PMA_MYSQL_INT_VERSION >= 50702) {
+        $res = PMA_DBI_get_variable('default_authentication_plugin');
+        if($res){
+            $authentication_plugin = $res;
         }
-    } elseif (PMA_MYSQL_SERVER_TYPE=='MySQL' && PMA_MYSQL_INT_VERSION >= 50702) {
-        $resultset = PMA_DBI_query('SELECT @@default_authentication_plugin');
-        $row = PMA_DBI_fetch_assoc($resultset);
-        $authentication_plugin = is_array($row) ? $row['@@default_authentication_plugin'] : null;
     }
     return $authentication_plugin;
 }
@@ -1303,17 +1298,19 @@ if (isset($_REQUEST['adduser_submit']) || isset($_REQUEST['change_copy'])) {
 
         $sql_res_opt    =   '';
         $fsfx_sql_res=fsfx_mk_resource_option();
-        if ((isset($Grant_priv) && $Grant_priv == 'Y') || $fsfx_sql_res ) {
+        $fsfx_grtp=(isset($Grant_priv) && $Grant_priv == 'Y');
+        if ( $fsfx_grtp || $fsfx_sql_res ) {
             if( (PMA_MYSQL_SERVER_TYPE == 'MySQL' && PMA_MYSQL_INT_VERSION >= 80011)
             ||  (PMA_MYSQL_SERVER_TYPE == 'MariaDB' && PMA_MYSQL_INT_VERSION >= 100400) ) {
-                $sql_res_opt    =   "ALTER USER '".PMA_sqlAddSlashes($username) . '\'@\'' . PMA_sqlAddSlashes($hostname)
+                $real_sql_query .= $fsfx_grtp ? ' WITH GRANT OPTION' : '';
+                $sql_query      .= $fsfx_grtp ? ' WITH GRANT OPTION' : '';
+                $sql_res_opt    =  "ALTER USER '".PMA_sqlAddSlashes($username) . '\'@\'' . PMA_sqlAddSlashes($hostname)
                         . '\' WITH ' . $fsfx_sql_res .';' ;
             }else{
-                $real_sql_query .= '  WITH GRANT OPTION ' . $fsfx_sql_res;
-                $sql_query      .= '  WITH GRANT OPTION ' . $fsfx_sql_res;
+                $real_sql_query .= ' WITH '. ($fsfx_grtp ? ' GRANT OPTION ' : '') . $fsfx_sql_res;
+                $sql_query      .= ' WITH '. ($fsfx_grtp ? ' GRANT OPTION ' : '') . $fsfx_sql_res;
                 $sql_res_opt    =   '';
             }
-
         }
         //print_r($sql_res_opt);
         if (isset($create_user_real)) {
@@ -1413,6 +1410,7 @@ if (isset($_REQUEST['adduser_submit']) || isset($_REQUEST['change_copy'])) {
         }
 
         #echo '<li>$real_sql_query: '.$real_sql_query.'</li>';
+        #echo '<li>$sql_res_opt: '.$sql_res_opt.'</li>';
         #echo '<li>$queries: '.$queries.'</li>';
         #echo '<li>$queries_for_display: '.$queries_for_display.'</li>';
         #echo '<li>$create_user_real: '.$create_user_real.'</li>';
@@ -1560,21 +1558,21 @@ if (! empty($update_privs)) {
         }
         */
 
+        // similar to above in 'adduser_submit', but concatenating variable name $sql_* are different
         $sql_res_opt    =   '';
         $fsfx_sql_res=fsfx_mk_resource_option();
-        //print_r(PMA_MYSQL_SERVER_TYPE);
-        if ((isset($Grant_priv) && $Grant_priv == 'Y') || $fsfx_sql_res ) {
+        $fsfx_grtp=(isset($Grant_priv) && $Grant_priv == 'Y');
+        if ( $fsfx_grtp || $fsfx_sql_res ) {
             if( (PMA_MYSQL_SERVER_TYPE == 'MySQL' && PMA_MYSQL_INT_VERSION >= 80011)
             ||  (PMA_MYSQL_SERVER_TYPE == 'MariaDB' && PMA_MYSQL_INT_VERSION >= 100400) ) {
+                $sql_query2     .= $fsfx_grtp ? ' WITH GRANT OPTION' : '';
                 $sql_res_opt    =   "ALTER USER '".PMA_sqlAddSlashes($username) . '\'@\'' . PMA_sqlAddSlashes($hostname)
                         . '\' WITH ' . $fsfx_sql_res .';' ;
             }else{
-                $sql_query2     .= '  WITH GRANT OPTION ' . $fsfx_sql_res;
+                $sql_query2     .= ' WITH '. ($fsfx_grtp ? ' GRANT OPTION ' : '') . $fsfx_sql_res;
                 $sql_res_opt    =   '';
             }
-
         }
-
         $sql_query2 .= ";\n";
     }
     if (! PMA_DBI_try_query($sql_query0)) {
