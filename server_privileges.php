@@ -1078,17 +1078,20 @@ function getCurrentAuthenticationPlugin(
             $username=$cu[0];
             $hostname=count($cu)>=2 ? $cu[1] : '';
         }
-
-        $resultset = PMA_DBI_query(
-            'SELECT `plugin` FROM `mysql`.`user` WHERE '
-            . '`User` = "' . PMA_sqlAddSlashes($username)
-            . '" AND `Host` = "' . PMA_sqlAddSlashes($hostname) . '" LIMIT 1'
-        );
-        $row = PMA_DBI_fetch_assoc($resultset);
-        // Table 'mysql'.'user' may not exist for some previous
-        // versions of MySQL - in that case consider fallback value
-        if (is_array($row) && isset($row['plugin'])) {
-            $authentication_plugin = $row['plugin'];
+        $sql="SELECT * FROM information_schema.`COLUMNS` WHERE TABLE_NAME='user' AND TABLE_SCHEMA='mysql' AND COLUMN_NAME='plugin'";
+        $fsfx_user_row = PMA_DBI_fetch_single_row($sql);
+        if($fsfx_user_row){
+            $resultset = PMA_DBI_query(
+                'SELECT `plugin` FROM `mysql`.`user` WHERE '
+                . '`User` = "' . PMA_sqlAddSlashes($username)
+                . '" AND `Host` = "' . PMA_sqlAddSlashes($hostname) . '" LIMIT 1'
+            );
+            $row = PMA_DBI_fetch_assoc($resultset);
+            // Table 'mysql'.'user' may not exist for some previous
+            // versions of MySQL - in that case consider fallback value
+            if (is_array($row) && isset($row['plugin'])) {
+                $authentication_plugin = $row['plugin'];
+            }
         }
     } elseif (PMA_MYSQL_INT_VERSION >= 50702) {
         $res = PMA_DBI_get_variable('default_authentication_plugin');
