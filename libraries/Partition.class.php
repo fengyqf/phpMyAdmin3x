@@ -42,9 +42,13 @@ class PMA_Partition
         static $have_partitioning = false;
         static $already_checked = false;
 
-        if (! $already_checked) {
-            $have_partitioning = PMA_MYSQL_INT_VERSION >= 50100 && PMA_DBI_fetch_value("SHOW VARIABLES LIKE 'have_partitioning';");
-            $already_checked = true;
+        if (! $already_checked && PMA_MYSQL_INT_VERSION >= 50100) {
+            $plg=PMA_DBI_fetch_result("SHOW PLUGINS");
+            foreach($plg as $row){
+                if($row['Name']=='partition'){
+                    $have_partitioning=true;
+                }
+            }
         }
         return $have_partitioning;
     }
