@@ -419,9 +419,11 @@ class PMA_StorageEngine
     /**
      * MySQL plugins, very ugly but effective
      */
-    static public function getPlugins($plugin_name=NULL)
+    static public function getPlugins($plugin_name=NULL,$all_plugin=false)
     {
-        $sql = 'SELECT * FROM information_schema.PLUGINS ORDER BY PLUGIN_TYPE, PLUGIN_NAME';
+        $table=$all_plugin ? 'ALL_PLUGINS' : 'PLUGINS';
+        $sql = "SELECT * FROM information_schema.{$table} ORDER BY PLUGIN_TYPE, PLUGIN_NAME";
+        //var_dump($all_plugin,$plugin_name,$sql);
         $result = PMA_DBI_fetch_result($sql);
         if($plugin_name){
             foreach($result as $row){
