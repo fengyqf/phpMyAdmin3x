@@ -582,6 +582,16 @@ function PMA_displayTableHeaders(&$is_display, &$fields_meta, $fields_cnt = 0, $
         }
     }
 
+    # 230802, ref sql.php, line 427; global variable defined in sql.php line 446
+    global $fsfx_resetsorting_url,$fsfx_resetsorting_oprt;
+    if(isset($fsfx_resetsorting_url) && $fsfx_resetsorting_url!=''){
+        echo '&nbsp;&nbsp; <a href="'.$fsfx_resetsorting_url.'" title="Reset saved sorted column, column order/visible, For current table">Reset Sorting... </a>';
+    }
+    if(isset($fsfx_resetsorting_oprt) && $fsfx_resetsorting_oprt!=''){
+        echo '<span class="success">reset sorting done.</span>';
+    }
+
+
 
     // Output data needed for grid editing
     echo '<input id="save_cells_at_once" type="hidden" value="' . $GLOBALS['cfg']['SaveCellsAtOnce'] . '" />';

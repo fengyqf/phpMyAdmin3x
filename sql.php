@@ -424,7 +424,16 @@ if ($GLOBALS['cfg']['RememberSorting']
     && isset($analyzed_sql[0]['queryflags']['select_from'])
     && count($analyzed_sql[0]['table_ref']) == 1
 ) {
+    //used in libraries/display_tbl.lib.php line 586   by yqf@231121
+    $fsfx_resetsorting_url='';
+    $fsfx_resetsorting_oprt='';
     $pmatable = new PMA_Table($table, $db);
+
+    if(isset($_GET['reset_sorting']) && $_GET['reset_sorting']=='rs'){
+        PMA_cacheDestroy($clear_errors=false);
+        $pmatable->removeUiProp(PMA_Table::PROP_SORTED_COLUMN);
+        $fsfx_resetsorting_oprt='done';
+    }
     if (empty($analyzed_sql[0]['order_by_clause'])) {
         $sorted_col = $pmatable->getUiProp(PMA_Table::PROP_SORTED_COLUMN);
         if ($sorted_col) {
@@ -441,6 +450,14 @@ if ($GLOBALS['cfg']['RememberSorting']
         // store the remembered table into session
         $pmatable->setUiProp(PMA_Table::PROP_SORTED_COLUMN, $analyzed_sql[0]['order_by_clause']);
     }
+    if(!empty($analyzed_sql[0]['order_by_clause'])){
+        $fsfx_resetsorting_url='sql.php'.PMA_generate_common_url(array(
+                'db' => $db,
+                'table' => $table,
+                'reset_sorting' => 'rs'
+        ));
+    }
+
 }
 
 // Do append a "LIMIT" clause?
