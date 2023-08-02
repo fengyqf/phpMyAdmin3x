@@ -2307,7 +2307,7 @@ function PMA_displayTable(&$dt_result, &$the_disp_mode, $analyzed_sql)
             } else {
                 $column_for_first_row = $row[$sorted_column_index];
             }
-            $column_for_first_row = strtoupper(substr($column_for_first_row, 0, $GLOBALS['cfg']['LimitChars']));
+            $column_for_first_row = strtoupper(substr((string)$column_for_first_row, 0, $GLOBALS['cfg']['LimitChars']));
             // fetch last row of the result set
             PMA_DBI_data_seek($dt_result, $num_rows - 1);
             $row = PMA_DBI_fetch_row($dt_result);
@@ -2318,7 +2318,7 @@ function PMA_displayTable(&$dt_result, &$the_disp_mode, $analyzed_sql)
             } else {
                 $column_for_last_row = $row[$sorted_column_index];
             }
-            $column_for_last_row = strtoupper(substr($column_for_last_row, 0, $GLOBALS['cfg']['LimitChars']));
+            $column_for_last_row = strtoupper(substr((string)$column_for_last_row, 0, $GLOBALS['cfg']['LimitChars']));
             // reset to first row for the loop in PMA_displayTableBody()
             PMA_DBI_data_seek($dt_result, 0);
             // we could also use here $sort_expression_nodirection
@@ -2751,7 +2751,7 @@ function PMA_handle_non_printable_contents($category, $content, $transform_funct
                 $result = htmlspecialchars(PMA_replace_binary_contents($content));
             }
             /* Create link to download */
-            if (count($url_params) > 0) {
+            if ($url_params && count($url_params) > 0) {
                 $result = '<a href="tbl_get_field.php' . PMA_generate_common_url($url_params) . '">' . $result . '</a>';
             }
         }
