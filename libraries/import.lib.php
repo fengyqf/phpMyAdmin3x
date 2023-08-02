@@ -508,7 +508,7 @@ function PMA_detectSize($last_cumulative_size, $last_cumulative_type, $curr_type
     /**
      * If the cell is NULL, don't treat it as a varchar
      */
-    if (! strcmp('NULL', $cell)) {
+    if (! strcmp('NULL', (string)$cell)) {
         return $last_cumulative_size;
     }
     /**
@@ -718,7 +718,7 @@ function PMA_detectType($last_cumulative_type, &$cell)
      * Else, we call it varchar for simplicity
      */
 
-    if (! strcmp('NULL', $cell)) {
+    if (! strcmp('NULL', (string)$cell)) {
         if ($last_cumulative_type === null || $last_cumulative_type == NONE) {
             return NONE;
         } else {

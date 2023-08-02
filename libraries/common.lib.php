@@ -880,7 +880,7 @@ function PMA_backquote($a_name, $do_it = true)
     }
 
     // '0' is also empty for php :-(
-    if (strlen($a_name) && $a_name !== '*') {
+    if (strlen((string)$a_name) && $a_name !== '*') {
         return '`' . str_replace('`', '``', $a_name) . '`';
     } else {
         return $a_name;
