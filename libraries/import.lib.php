@@ -966,29 +966,35 @@ function PMA_buildSQL($db_name, &$tables, &$analyses = null, &$additional_sql = 
     /**
      * Create the SQL statements to insert all the data
      *
-     * Only one insert query is formed for each table
+     * Only one insert query is formed for each table, IF max_allowed_packet enough
+     *  otherwise, insert rows in batch
      */
     $tempSQLStr = "";
     $col_count = 0;
     $num_tables = count($tables);
+
+    $fsfx_limit_length = (int)PMA_DBI_get_variable('max_allowed_packet');
+
     for ($i = 0; $i < $num_tables; ++$i) {
         $num_cols = count($tables[$i][COL_NAMES]);
         $num_rows = count($tables[$i][ROWS]);
 
-        $tempSQLStr = "INSERT INTO " . PMA_backquote($db_name) . '.' . PMA_backquote($tables[$i][TBL_NAME]) . " (";
+        $tempSQLStr_hdr = "INSERT INTO " . PMA_backquote($db_name) . '.' . PMA_backquote($tables[$i][TBL_NAME]) . " (";
 
         for ($m = 0; $m < $num_cols; ++$m) {
-            $tempSQLStr .= PMA_backquote($tables[$i][COL_NAMES][$m]);
+            $tempSQLStr_hdr .= PMA_backquote($tables[$i][COL_NAMES][$m]);
 
             if ($m != ($num_cols - 1)) {
-                $tempSQLStr .= ", ";
+                $tempSQLStr_hdr .= ", ";
             }
         }
 
-        $tempSQLStr .= ") VALUES ";
+        $tempSQLStr_hdr .= ") VALUES ";
 
+        $tempSQLStr = $tempSQLStr_hdr;
+        $fsfx_batch_row_nums=0;
         for ($j = 0; $j < $num_rows; ++$j) {
-            $tempSQLStr .= "(";
+            $tempSQLStr_line = "(";
 
             for ($k = 0; $k < $num_cols; ++$k) {
                 // If fully formatted SQL, no need to enclose with aphostrophes, add shalshes etc.
@@ -996,7 +1002,7 @@ function PMA_buildSQL($db_name, &$tables, &$analyses = null, &$additional_sql = 
                     && isset($analyses[$i][FORMATTEDSQL][$col_count])
                     && $analyses[$i][FORMATTEDSQL][$col_count] == true
                 ) {
-                    $tempSQLStr .= (string) $tables[$i][ROWS][$j][$k];
+                    $tempSQLStr_line .= (string) $tables[$i][ROWS][$j][$k];
                 } else {
                     if ($analyses != null) {
                         $is_varchar = ($analyses[$i][TYPES][$col_count] === VARCHAR);
@@ -1005,17 +1011,17 @@ function PMA_buildSQL($db_name, &$tables, &$analyses = null, &$additional_sql = 
                     }
 
                     /* Don't put quotes around NULL fields */
-                    if (! strcmp($tables[$i][ROWS][$j][$k], 'NULL')) {
+                    if (! strcmp((string)($tables[$i][ROWS][$j][$k]), 'NULL')) {
                         $is_varchar = false;
                     }
 
-                    $tempSQLStr .= (($is_varchar) ? "'" : "");
-                    $tempSQLStr .= PMA_sqlAddSlashes((string)$tables[$i][ROWS][$j][$k]);
-                    $tempSQLStr .= (($is_varchar) ? "'" : "");
+                    $tempSQLStr_line .= (($is_varchar) ? "'" : "");
+                    $tempSQLStr_line .= PMA_sqlAddSlashes((string)$tables[$i][ROWS][$j][$k]);
+                    $tempSQLStr_line .= (($is_varchar) ? "'" : "");
                 }
 
                 if ($k != ($num_cols - 1)) {
-                    $tempSQLStr .= ", ";
+                    $tempSQLStr_line .= ", ";
                 }
 
                 if ($col_count == ($num_cols - 1)) {
@@ -1028,25 +1034,44 @@ function PMA_buildSQL($db_name, &$tables, &$analyses = null, &$additional_sql = 
                 unset($tables[$i][ROWS][$j][$k]);
             }
 
-            $tempSQLStr .= ")";
+            $tempSQLStr_line .= ")";
 
-            if ($j != ($num_rows - 1)) {
-                $tempSQLStr .= ",\n ";
+            /* buff is full for current line, marginal 1024 byte  */
+            if(strlen($tempSQLStr) + strlen($tempSQLStr_line) > $fsfx_limit_length - 1024){
+                if($fsfx_batch_row_nums==0){
+                    echo "<li>MySQL variable max_allowed_packet is too small to even a single line</li>";
+                    die();  // Just a die without any friendly notice
+                }
+                /* batch run, and flush buff */
+                PMA_importRunQuery($tempSQLStr, $tempSQLStr);
+                $tempSQLStr = $tempSQLStr_hdr;
+                $tempSQLStr .= $tempSQLStr_line;
+                $fsfx_batch_row_nums=1;
+            }else{
+                if($fsfx_batch_row_nums>0){
+                    $tempSQLStr .= ", \n";
+                }
+                $tempSQLStr .= $tempSQLStr_line;
+                $fsfx_batch_row_nums += 1;
             }
 
             $col_count = 0;
             /* Delete the row after we are done with it */
             unset($tables[$i][ROWS][$j]);
+            unset($tempSQLStr_line);
         }
 
-        $tempSQLStr .= ";";
+        if($fsfx_batch_row_nums > 0){
+            $tempSQLStr .= ";";
+            /**
+             * Each SQL statement is executed immediately
+             * after it is formed so that we don't have
+             * to store them in a (possibly large) buffer
+             */
+            PMA_importRunQuery($tempSQLStr, $tempSQLStr);
+        }
 
-        /**
-         * Each SQL statement is executed immediately
-         * after it is formed so that we don't have
-         * to store them in a (possibly large) buffer
-         */
-        PMA_importRunQuery($tempSQLStr, $tempSQLStr);
+
     }
 
     /* No longer needed */
