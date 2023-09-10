@@ -426,6 +426,7 @@ define("INT",       2);
 define("DECIMAL",   3);
 define("BIGINT",    4);
 define("GEOMETRY",  5);
+define("MEDIUMTEXT",6);
 
 /* Decimal size defs */
 define("M",         0);
@@ -817,6 +818,10 @@ function PMA_analyzeTable(&$table)
                 $types[$n] = VARCHAR;
                 $sizes[$n] = '10';
             }
+            /* max length or VARCHAR, else upgrade to MEDIUMTEXT */
+            if($types[$n] == VARCHAR && $sizes[$n] > 2000){
+                $types[$n] = MEDIUMTEXT;
+            }
         }
 
         return array($types, $sizes);
@@ -922,7 +927,7 @@ function PMA_buildSQL($db_name, &$tables, &$analyses = null, &$additional_sql = 
     }
 
     if ($analyses != null) {
-        $type_array = array(NONE => "NULL", VARCHAR => "varchar", INT => "int", DECIMAL => "decimal", BIGINT => "bigint", GEOMETRY => 'geometry');
+        $type_array = array(NONE => "NULL", VARCHAR => "varchar", INT => "int", DECIMAL => "decimal", BIGINT => "bigint", GEOMETRY => 'geometry', MEDIUMTEXT => 'mediumtext');
 
         /* TODO: Do more checking here to make sure they really are matched */
         if (count($tables) != count($analyses)) {
@@ -942,7 +947,7 @@ function PMA_buildSQL($db_name, &$tables, &$analyses = null, &$additional_sql = 
                 }
 
                 $tempSQLStr .= PMA_backquote($tables[$i][COL_NAMES][$j]) . " " . $type_array[$analyses[$i][TYPES][$j]];
-                if ($analyses[$i][TYPES][$j] != GEOMETRY) {
+                if ($analyses[$i][TYPES][$j] != GEOMETRY && $analyses[$i][TYPES][$j] != MEDIUMTEXT) {
                     $tempSQLStr .= "(" . $size . ")";
                 }
 
@@ -1005,7 +1010,7 @@ function PMA_buildSQL($db_name, &$tables, &$analyses = null, &$additional_sql = 
                     $tempSQLStr_line .= (string) $tables[$i][ROWS][$j][$k];
                 } else {
                     if ($analyses != null) {
-                        $is_varchar = ($analyses[$i][TYPES][$col_count] === VARCHAR);
+                        $is_varchar = ($analyses[$i][TYPES][$col_count] === VARCHAR || $analyses[$i][TYPES][$col_count] === MEDIUMTEXT);
                     } else {
                         $is_varchar = !is_numeric($tables[$i][ROWS][$j][$k]);
                     }
