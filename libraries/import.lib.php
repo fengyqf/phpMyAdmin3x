@@ -509,7 +509,7 @@ function PMA_getDecimalSize(&$cell)
  * @param string &$cell                   The current cell
  * @return  string                          Size of the given cell in the type-appropriate format
  */
-function PMA_detectSize($last_cumulative_size, $last_cumulative_type, $curr_type, &$cell)
+function PMA_detectSize($last_cumulative_size, $last_cumulative_type, $curr_type, $cell)
 {
     $curr_size = strlen((string)$cell);
 
@@ -719,7 +719,7 @@ function PMA_detectSize($last_cumulative_size, $last_cumulative_type, $curr_type
  * @param string &$cell                 String representation of the cell for which a best-fit type is to be determined
  * @return  int                           The MySQL type representation (VARCHAR or INT or BIGINT or DECIMAL or NONE)
  */
-function PMA_detectType($last_cumulative_type, &$cell)
+function PMA_detectType($last_cumulative_type, $cell)
 {
     /**
      * If numeric, determine if decimal, int or bigint
