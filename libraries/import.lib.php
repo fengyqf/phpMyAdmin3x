@@ -124,8 +124,15 @@ function PMA_importRunQuery($sql = '', $full = '', $controluser = false)
                         // If a 'USE <db>' SQL-clause was found, set our current $db to the new one
                         list($db, $reload) = PMA_lookForUse($import_run_buffer['sql'], $db, $reload);
                     } elseif ($run_query) {
+                        /* use simple query to save memroy for large sql, >50k */
+                        $fsfx_no_trk=false;
+                        if(strlen($import_run_buffer['sql'])>50000){
+                            $fsfx_no_trk=true;
+                        }
                         if ($controluser) {
                             $result = PMA_query_as_controluser($import_run_buffer['sql']);
+                        } elseif($fsfx_no_trk){
+                            $result = PMA_DBI_simple_query($import_run_buffer['sql']);
                         } else {
                             $result = PMA_DBI_try_query($import_run_buffer['sql']);
                         }

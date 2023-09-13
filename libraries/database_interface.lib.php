@@ -173,6 +173,28 @@ function PMA_DBI_try_query($query, $link = null, $options = 0, $cache_affected_r
     return $r;
 }
 
+
+/**
+ * same to PMA_DBI_try_query(), but without tracker, reduce memory usage for big query
+ *
+ */
+function PMA_DBI_simple_query($query, $link = null, $options = 0, $cache_affected_rows = true)
+{
+    if (empty($link)) {
+        if (isset($GLOBALS['userlink'])) {
+            $link = $GLOBALS['userlink'];
+        } else {
+            return false;
+        }
+    }
+    $r = PMA_DBI_real_query($query, $link, $options);
+    if ($cache_affected_rows) {
+        $GLOBALS['cached_affected_rows'] = PMA_DBI_affected_rows($link, $get_from_cache = false);
+    }
+    return $r;
+}
+
+
 /**
  * converts charset of a mysql message, usually coming from mysql_error(),
  * into PMA charset, usally UTF-8
