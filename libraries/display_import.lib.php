@@ -101,6 +101,8 @@ if ($_SESSION[$SESSION_KEY]["handler"]!="noplugin") {
 } // else
 ?>
                     }); // onclick
+            $('.text_skip_queries_n1').click(function(){ $('#text_skip_queries').val($(this).text()); return false; });
+            $('.text_skip_queries_n1').css('padding','0px 5px 0 5px');
                 }); // domready
 
                 document.write('<form action="import.php" method="post" enctype="multipart/form-data" name="import"<?php if ($_SESSION[$SESSION_KEY]["handler"]!="noplugin") echo ' target="import_upload_iframe"'; ?>>');
@@ -226,7 +228,9 @@ if ($_SESSION[$SESSION_KEY]["handler"]!="noplugin") {
             ?>
         <div class="formelementrow">
             <label for="text_skip_queries"><?php echo __('Number of rows to skip, starting from the first row:'); ?></label>
-            <input type="text" name="skip_queries" value="<?php echo PMA_pluginGetDefault('Import', 'skip_queries');?>" id="text_skip_queries" />
+            <input type="text" name="skip_queries" value="<?php echo PMA_pluginGetDefault('Import', 'skip_queries');?>" id="text_skip_queries" size="3" />
+            <a href="#" class="text_skip_queries_n1">0</a>
+            <a href="#" class="text_skip_queries_n1">1</a>
         </div>
             <?php
         } else {
@@ -234,7 +238,9 @@ if ($_SESSION[$SESSION_KEY]["handler"]!="noplugin") {
             // do not show the Skip dialog to avoid the risk of someone
             // entering a value here that would interfere with "skip"
             ?>
-        <input type="hidden" name="skip_queries" value="<?php echo PMA_pluginGetDefault('Import', 'skip_queries');?>" id="text_skip_queries" />
+        <input type="hidden" name="skip_queries" value="<?php echo PMA_pluginGetDefault('Import', 'skip_queries');?>" id="text_skip_queries" size="3" />
+            <a href="#" class="text_skip_queries_n1">0</a>
+            <a href="#" class="text_skip_queries_n1">1</a>
             <?php
         }
         ?>
