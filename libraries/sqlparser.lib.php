@@ -2402,6 +2402,7 @@ if (! defined('PMA_MINIMUM_COMMON')) {
                 }
                 break;
             case 'alpha_functionName':
+                $before    .= ' ';
                 $funcname = strtoupper($arr[$i]['data']);
                 if ($docu && isset($PMA_SQPdata_functions_docs[$funcname])) {
                     $before .= PMA_showMySQLDocu(
