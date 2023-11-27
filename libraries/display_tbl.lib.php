@@ -281,7 +281,7 @@ function PMA_displayTableNavigationOneButton($caption, $title, $pos, $html_sql_q
  *
  * @see     PMA_displayTable()
  */
-function PMA_displayTableNavigation($pos_next, $pos_prev, $sql_query, $id_for_direction_dropdown)
+function PMA_displayTableNavigation($pos_next, $pos_prev, $sql_query, $id_for_direction_dropdown,$fsfx_buff=NULL)
 {
     global $db, $table, $goto;
     global $num_rows, $unlim_num_rows;
@@ -452,13 +452,119 @@ function PMA_displayTableNavigation($pos_next, $pos_prev, $sql_query, $id_for_di
         echo "\n";
         ?>
         </form>
-    </td>
-    <td class="navigation_separator"></td>
+    </td><?php
+    if($fsfx_buff) { ?>
+    <td><div class="navigation_separator">|</div></td>
+    <td class="sorting"><?php echo $fsfx_buff; ?></td><?php
+    }
+?>
 </tr>
 </table>
 
     <?php
 } // end of the 'PMA_displayTableNavigation()' function
+
+
+/**
+ * a block moved here, from PMA_displayTableHeaders(), but return a string contains output HTML
+ *
+ */
+function PMA_fsfx_displayTableHeaders_sorting(&$is_display, $fields_cnt = 0, $analyzed_sql = '', $sort_expression=null)
+{
+    global $db, $table, $goto;
+    global $sql_query, $num_rows;
+    global $vertical_display, $highlight_columns;
+
+    $buff='';
+    // can the result be sorted?
+    if ($is_display['sort_lnk'] == '1') {
+        // Just as fallback
+        $unsorted_sql_query     = $sql_query;
+        if (isset($analyzed_sql[0]['unsorted_query'])) {
+            $unsorted_sql_query = $analyzed_sql[0]['unsorted_query'];
+        }
+        // Handles the case of multiple clicks on a column's header
+        // which would add many spaces before "ORDER BY" in the
+        // generated query.
+        $unsorted_sql_query = trim($unsorted_sql_query);
+
+        // sorting by indexes, only if it makes sense (only one table ref)
+        if (isset($analyzed_sql)
+            && isset($analyzed_sql[0])
+            && isset($analyzed_sql[0]['querytype'])
+            && $analyzed_sql[0]['querytype'] == 'SELECT'
+            && isset($analyzed_sql[0]['table_ref'])
+            && count($analyzed_sql[0]['table_ref']) == 1
+        ) {
+            // grab indexes data:
+            $indexes = PMA_Index::getFromTable($table, $db);
+            // do we have any index?
+            if ($indexes) {
+                if ($_SESSION['tmp_user_values']['disp_direction'] == 'horizontal'
+                    || $_SESSION['tmp_user_values']['disp_direction'] == 'horizontalflipped'
+                ) {
+                    $span = $fields_cnt;
+                    if ($is_display['edit_lnk'] != 'nn') {
+                        $span++;
+                    }
+                    if ($is_display['del_lnk'] != 'nn') {
+                        $span++;
+                    }
+                    if ($is_display['del_lnk'] != 'kp' && $is_display['del_lnk'] != 'nn') {
+                        $span++;
+                    }
+                } else {
+                    $span = $num_rows + floor($num_rows/$_SESSION['tmp_user_values']['repeat_cells']) + 1;
+                }
+
+                $buff = '<form action="sql.php" method="post">' . "\n";
+                $buff.= PMA_generate_common_hidden_inputs($db, $table);
+                $buff.= '<select name="sql_query" class="autosubmit" title="'.htmlspecialchars(__('Sort')).'">' . "\n";
+                $used_index = false;
+                $local_order = (isset($sort_expression) ? $sort_expression : '');
+                foreach ($indexes as $index) {
+                    $asc_sort = '`' . implode('` ASC, `', array_keys($index->getColumns())) . '` ASC';
+                    $desc_sort = '`' . implode('` DESC, `', array_keys($index->getColumns())) . '` DESC';
+                    $used_index = $used_index || $local_order == $asc_sort || $local_order == $desc_sort;
+                    if (preg_match('@(.*)([[:space:]](LIMIT (.*)|PROCEDURE (.*)|FOR UPDATE|LOCK IN SHARE MODE))@is', $unsorted_sql_query, $my_reg)) {
+                        $unsorted_sql_query_first_part = $my_reg[1];
+                        $unsorted_sql_query_second_part = $my_reg[2];
+                    } else {
+                        $unsorted_sql_query_first_part = $unsorted_sql_query;
+                        $unsorted_sql_query_second_part = '';
+                    }
+                    $buff.= '<option value="'
+                        . htmlspecialchars($unsorted_sql_query_first_part  . "\n" . ' ORDER BY ' . $asc_sort . $unsorted_sql_query_second_part)
+                        . '"' . ($local_order == $asc_sort ? ' selected="selected"' : '')
+                        . '>' . htmlspecialchars($index->getName()) . ' ('
+                        . __('Ascending') . ')</option>';
+                    $buff.= '<option value="'
+                        . htmlspecialchars($unsorted_sql_query_first_part . "\n" . ' ORDER BY ' . $desc_sort . $unsorted_sql_query_second_part)
+                        . '"' . ($local_order == $desc_sort ? ' selected="selected"' : '')
+                        . '>' . htmlspecialchars($index->getName()) . ' ('
+                        . __('Descending') . ')</option>';
+                }
+                $buff.= '<option value="' . htmlspecialchars($unsorted_sql_query) . '"' . ($used_index ? '' : ' selected="selected"') . '>' . __('None') . '</option>';
+                $buff.= '</select>' . "\n";
+                $buff.= '<noscript><input type="submit" value="' . __('Go') . '" /></noscript>';
+                $buff.= '</form>' . "\n";
+            }
+        }
+    }
+    # 230802, ref sql.php, line 427; global variable defined in sql.php line 446
+    global $fsfx_resetsorting_url,$fsfx_resetsorting_oprt;
+    if(isset($fsfx_resetsorting_url) && $fsfx_resetsorting_url!=''){
+        $fsfx_resetsorting_url .= '&sql_query='.urlencode($unsorted_sql_query_first_part);
+        $buff.= '<a href="'.$fsfx_resetsorting_url.'" title="Reset saved sorted column, column order/visible, For current table">Reset Sorting</a>';
+    }
+    if(isset($fsfx_resetsorting_oprt) && $fsfx_resetsorting_oprt!=''){
+        $buff.= '<span class="success">done.</span>';
+    }
+    return $buff;
+}
+
+
+
 
 
 /**
@@ -502,95 +608,13 @@ function PMA_displayTableHeaders(&$is_display, &$fields_meta, $fields_cnt = 0, $
         $analyzed_sql = array();
     }
 
-    // can the result be sorted?
     if ($is_display['sort_lnk'] == '1') {
-
-        // Just as fallback
         $unsorted_sql_query     = $sql_query;
         if (isset($analyzed_sql[0]['unsorted_query'])) {
             $unsorted_sql_query = $analyzed_sql[0]['unsorted_query'];
         }
-        // Handles the case of multiple clicks on a column's header
-        // which would add many spaces before "ORDER BY" in the
-        // generated query.
         $unsorted_sql_query = trim($unsorted_sql_query);
-
-        // sorting by indexes, only if it makes sense (only one table ref)
-        if (isset($analyzed_sql)
-            && isset($analyzed_sql[0])
-            && isset($analyzed_sql[0]['querytype'])
-            && $analyzed_sql[0]['querytype'] == 'SELECT'
-            && isset($analyzed_sql[0]['table_ref'])
-            && count($analyzed_sql[0]['table_ref']) == 1
-        ) {
-
-            // grab indexes data:
-            $indexes = PMA_Index::getFromTable($table, $db);
-
-            // do we have any index?
-            if ($indexes) {
-
-                if ($_SESSION['tmp_user_values']['disp_direction'] == 'horizontal'
-                    || $_SESSION['tmp_user_values']['disp_direction'] == 'horizontalflipped'
-                ) {
-                    $span = $fields_cnt;
-                    if ($is_display['edit_lnk'] != 'nn') {
-                        $span++;
-                    }
-                    if ($is_display['del_lnk'] != 'nn') {
-                        $span++;
-                    }
-                    if ($is_display['del_lnk'] != 'kp' && $is_display['del_lnk'] != 'nn') {
-                        $span++;
-                    }
-                } else {
-                    $span = $num_rows + floor($num_rows/$_SESSION['tmp_user_values']['repeat_cells']) + 1;
-                }
-
-                echo '<form action="sql.php" method="post">' . "\n";
-                echo PMA_generate_common_hidden_inputs($db, $table);
-                echo __('Sort by key') . ': <select name="sql_query" class="autosubmit">' . "\n";
-                $used_index = false;
-                $local_order = (isset($sort_expression) ? $sort_expression : '');
-                foreach ($indexes as $index) {
-                    $asc_sort = '`' . implode('` ASC, `', array_keys($index->getColumns())) . '` ASC';
-                    $desc_sort = '`' . implode('` DESC, `', array_keys($index->getColumns())) . '` DESC';
-                    $used_index = $used_index || $local_order == $asc_sort || $local_order == $desc_sort;
-                    if (preg_match('@(.*)([[:space:]](LIMIT (.*)|PROCEDURE (.*)|FOR UPDATE|LOCK IN SHARE MODE))@is', $unsorted_sql_query, $my_reg)) {
-                        $unsorted_sql_query_first_part = $my_reg[1];
-                        $unsorted_sql_query_second_part = $my_reg[2];
-                    } else {
-                        $unsorted_sql_query_first_part = $unsorted_sql_query;
-                        $unsorted_sql_query_second_part = '';
-                    }
-                    echo '<option value="'
-                        . htmlspecialchars($unsorted_sql_query_first_part  . "\n" . ' ORDER BY ' . $asc_sort . $unsorted_sql_query_second_part)
-                        . '"' . ($local_order == $asc_sort ? ' selected="selected"' : '')
-                        . '>' . htmlspecialchars($index->getName()) . ' ('
-                        . __('Ascending') . ')</option>';
-                    echo '<option value="'
-                        . htmlspecialchars($unsorted_sql_query_first_part . "\n" . ' ORDER BY ' . $desc_sort . $unsorted_sql_query_second_part)
-                        . '"' . ($local_order == $desc_sort ? ' selected="selected"' : '')
-                        . '>' . htmlspecialchars($index->getName()) . ' ('
-                        . __('Descending') . ')</option>';
-                }
-                echo '<option value="' . htmlspecialchars($unsorted_sql_query) . '"' . ($used_index ? '' : ' selected="selected"') . '>' . __('None') . '</option>';
-                echo '</select>' . "\n";
-                echo '<noscript><input type="submit" value="' . __('Go') . '" /></noscript>';
-                echo '</form>' . "\n";
-            }
-        }
     }
-
-    # 230802, ref sql.php, line 427; global variable defined in sql.php line 446
-    global $fsfx_resetsorting_url,$fsfx_resetsorting_oprt;
-    if(isset($fsfx_resetsorting_url) && $fsfx_resetsorting_url!=''){
-        echo '&nbsp;&nbsp; <a href="'.$fsfx_resetsorting_url.'" title="Reset saved sorted column, column order/visible, For current table">Reset Sorting... </a>';
-    }
-    if(isset($fsfx_resetsorting_oprt) && $fsfx_resetsorting_oprt!=''){
-        echo '<span class="success">reset sorting done.</span>';
-    }
-
 
 
     // Output data needed for grid editing
@@ -2421,8 +2445,11 @@ function PMA_displayTable(&$dt_result, &$the_disp_mode, $analyzed_sql)
         }
     }
 
+    // drop list for ordering, moved here as a function
+    $fsfx_buff=PMA_fsfx_displayTableHeaders_sorting($is_display, $fields_cnt = $fields_cnt, $analyzed_sql = $analyzed_sql, $sort_expression=$sort_expression);
+
     if ($is_display['nav_bar'] == '1' && empty($analyzed_sql[0]['limit_clause'])) {
-        PMA_displayTableNavigation($pos_next, $pos_prev, $sql_query, 'top_direction_dropdown');
+        PMA_displayTableNavigation($pos_next, $pos_prev, $sql_query, 'top_direction_dropdown',$fsfx_buff=$fsfx_buff);
         echo "\n";
     } elseif (! isset($GLOBALS['printview']) || $GLOBALS['printview'] != '1') {
         echo "\n" . '<br /><br />' . "\n";
