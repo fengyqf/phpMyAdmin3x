@@ -864,12 +864,16 @@ function PMA_buildSQL($db_name, &$tables, &$analyses = null, &$additional_sql = 
     /* Take care of the options */
     if (isset($options['db_collation'])&& ! is_null($options['db_collation'])) {
         $collation = $options['db_collation'];
+    } elseif (PMA_MYSQL_INT_VERSION >= 50503) {
+        $collation = "utf8mb4_general_ci";
     } else {
         $collation = "utf8_general_ci";
     }
 
     if (isset($options['db_charset']) && ! is_null($options['db_charset'])) {
         $charset = $options['db_charset'];
+    } elseif (PMA_MYSQL_INT_VERSION >= 50503) {
+        $charset = "utf8mb4";
     } else {
         $charset = "utf8";
     }
