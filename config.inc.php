@@ -58,6 +58,7 @@ $cfg['blowfish_secret'] = 'fsctoken';
 $cfg['Export']['sql_procedure_function'] = false;
 $cfg['pinned_collations'] = array(
     'utf8mb4_general_ci','utf8mb4_unicode_ci','utf8mb4_bin',
+    'utf8mb3_general_ci','utf8mb3_unicode_ci','utf8mb3_bin',
     'utf8_general_ci','utf8_unicode_ci','utf8_bin',
 );
 
