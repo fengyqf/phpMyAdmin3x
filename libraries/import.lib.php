@@ -878,6 +878,12 @@ function PMA_buildSQL($db_name, &$tables, &$analyses = null, &$additional_sql = 
         $charset = "utf8";
     }
 
+    if (isset($options['comment'])) {
+        $table_comment = $options['comment'];
+    } else {
+        $table_comment = '';
+    }
+
     if (isset($options['create_db'])) {
         $create_db = $options['create_db'];
     } else {
@@ -968,7 +974,9 @@ function PMA_buildSQL($db_name, &$tables, &$analyses = null, &$additional_sql = 
             }
             $tempSQLStr .= ")"
                 . (PMA_DRIZZLE ? "" : " DEFAULT CHARACTER SET " . $charset)
-                . " COLLATE " . $collation . ";";
+                . " COLLATE " . $collation
+                . ($table_comment ? " COMMENT='".PMA_sqlAddSlashes($table_comment)."' " : "")
+                . ";";
 
             /**
              * Each SQL statement is executed immediately
