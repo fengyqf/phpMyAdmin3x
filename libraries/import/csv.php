@@ -426,12 +426,20 @@ if ($analyze) {
      */
 
     /* Set database name to the currently selected one, if applicable */
+    $options = array();
     if (strlen($db)) {
         $db_name = $db;
-        $options = array('create_db' => false);
+        $options['create_db'] = false;
     } else {
         $db_name = 'CSV_DB';
-        $options = null;
+    }
+
+    /* csv file name, used for COMMENT ... in  CREATE TABLE  */
+    if(isset($_FILES['import_file']['name'])){
+        $options['comment'] = $_FILES['import_file']['name'];
+    }
+    if(!$options){
+        $options=null;
     }
 
     /* Non-applicable parameters */
