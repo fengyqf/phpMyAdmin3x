@@ -91,4 +91,16 @@ $cfg['Servers'][$i]['host'] = '10.0.0.123';
 
 include('./config_patch.inc.php');
 
+/*
+    iconv() //TRANSLIT NOT supported on WINNT; use mbstring... instead
+    BUT, maybe not effective
+*/
+/*
+if(PHP_OS == 'WINNT'){
+    $cfg['RecodingEngine'] = 'mbstring';
+}
+*/
+
+
+
 ?>
