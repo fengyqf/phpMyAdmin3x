@@ -81,4 +81,16 @@ $cfg['Servers'][1]['password'] = 'you-password';
 /* Addition config */
 include('./config_patch.inc.php');
 
+/*
+    iconv() //TRANSLIT NOT supported on WINNT; use mbstring... instead
+    BUT, maybe not effective
+*/
+/*
+if(PHP_OS == 'WINNT'){
+    $cfg['RecodingEngine'] = 'mbstring';
+}
+*/
+
+
+
 ?>
