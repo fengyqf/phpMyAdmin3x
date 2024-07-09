@@ -87,7 +87,7 @@ function PMA_replaceBBLink($found)
 function PMA_sanitize($message, $escape = false, $safe = false)
 {
     if (!$safe) {
-        $message = strtr($message, array('<' => '&lt;', '>' => '&gt;'));
+        $message = strtr((string)$message, array('<' => '&lt;', '>' => '&gt;'));
     }
     /* Interpret bb code */
     $replace_pairs = array(
