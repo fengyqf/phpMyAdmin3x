@@ -553,7 +553,7 @@ function PMA_fsfx_displayTableHeaders_sorting(&$is_display, $fields_cnt = 0, $an
     }
     # 230802, ref sql.php, line 427; global variable defined in sql.php line 446
     global $fsfx_resetsorting_url,$fsfx_resetsorting_oprt;
-    if(isset($fsfx_resetsorting_url) && $fsfx_resetsorting_url!=''){
+    if(isset($fsfx_resetsorting_url) && $fsfx_resetsorting_url!='' && isset($unsorted_sql_query_first_part)){
         $fsfx_resetsorting_url .= '&sql_query='.urlencode($unsorted_sql_query_first_part);
         $buff.= '<a href="'.$fsfx_resetsorting_url.'" title="Reset saved sorted column, column order/visible, For current table">Reset Sorting</a>';
     }

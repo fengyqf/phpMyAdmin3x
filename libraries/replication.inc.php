@@ -146,7 +146,7 @@ function PMA_extract_db_or_table($string, $what = 'db')
     if ('db' == $what) {
         return $list[0];
     } else {
-        return $list[1];
+        return isset($list[1]) ? $list[1] : '';
     }
 }
 /**
@@ -156,7 +156,7 @@ function PMA_extract_db_or_table($string, $what = 'db')
  *
  * @return mixed output of PMA_DBI_try_query
  */
-function PMA_replication_slave_control($action, $control = null, $link = null)
+function PMA_replication_slave_control($action, $control = '', $link = null)
 {
     $action = strtoupper($action);
     $control = strtoupper($control);
@@ -164,7 +164,7 @@ function PMA_replication_slave_control($action, $control = null, $link = null)
     if ($action != "START" && $action != "STOP") {
         return -1;
     }
-    if ($control != "SQL_THREAD" && $control != "IO_THREAD" && $control != null) {
+    if ($control != "SQL_THREAD" && $control != "IO_THREAD" && $control != '') {
         return -1;
     }
 
