@@ -15,7 +15,17 @@ if (! defined('PHPMYADMIN')) {
  */
 require './libraries/auth/swekey/swekey.auth.lib.php';
 
-if (function_exists('mcrypt_encrypt')) {
+// PHP_VERSION_ID defined in PHP 5.2.7+
+if (!defined('PHP_VERSION_ID')) {
+    define('PHP_VERSION_ID', 0 );
+}
+
+/*  mcrypt deprecate from php 7.1, and removed from 7.2
+    avalid in pecl, to PHP 8.3, and marked 'not maintained' 2024/11/26
+
+*/
+
+if (PHP_VERSION_ID < 70100 && function_exists('mcrypt_encrypt')) {
     /**
      * Uses faster mcrypt library if available
      * (as this is not called from anywhere else, put the code in-line
@@ -72,6 +82,107 @@ if (function_exists('mcrypt_encrypt')) {
         return trim(mcrypt_decrypt(MCRYPT_BLOWFISH, $secret, base64_decode($encdata), MCRYPT_MODE_CBC, $iv));
     }
 
+    // from php 7.1, mcrypt was marked Deprecated, use phpseclib (copied from PMA 4.0.6)
+} elseif(PHP_VERSION_ID >= 70100 ){
+    // ref  phpMyAdmin-4.0.10.20-all-languages/libraries/plugins/auth/AuthenticationCookie.class.php::806-836
+    function PMA_blowfish_getIVSize()
+    {
+        include_once "./libraries/phpseclib/Crypt/AES.php";
+        $cipher = new Crypt_AES(CRYPT_AES_MODE_ECB);
+        return $cipher->block_size;
+    }
+
+    function PMA_blowfish_createIV()
+    {
+        if (function_exists('mcrypt_create_iv')) {
+            srand((double) microtime() * 1000000);
+            $td = mcrypt_module_open(MCRYPT_BLOWFISH, '', MCRYPT_MODE_CBC, '');
+            if ($td === false) {
+                PMA_fatalError(__('Failed to use Blowfish from mcrypt!'));
+            }
+            return mcrypt_create_iv(mcrypt_enc_get_iv_size($td), MCRYPT_RAND);
+        } else {
+            include_once "./libraries/phpseclib/Crypt/Random.php";
+            return crypt_random_string(PMA_blowfish_getIVSize());
+        }
+    }
+
+    // ref  phpMyAdmin-4.0.6-all-languages/libraries/plugins/auth/AuthenticationCookie.class.php::618-682
+    /**
+     * Encryption using blowfish algorithm (mcrypt)
+     * or phpseclib's AES if mcrypt not available
+     *
+     * @param string $data   original data
+     * @param string $secret the secret
+     *
+     * @return string the encrypted result
+     */
+    function PMA_blowfish_encrypt($data, $secret)
+    {
+        global $iv;
+        if (! function_exists('mcrypt_encrypt')) {
+            /**
+             * This library uses mcrypt when available, so
+             * we could always call it instead of having an
+             * if/then/else logic, however the include_once
+             * call is costly
+             */
+            include_once "./libraries/phpseclib/Crypt/AES.php";
+            $cipher = new Crypt_AES(CRYPT_AES_MODE_ECB);
+            $cipher->setKey($secret);
+            return base64_encode($cipher->encrypt($data));
+        } else {
+            return base64_encode(
+                mcrypt_encrypt(
+                    MCRYPT_BLOWFISH,
+                    $secret,
+                    $data,
+                    MCRYPT_MODE_CBC,
+                    $iv
+                )
+            );
+        }
+    }
+
+    /**
+     * Decryption using blowfish algorithm (mcrypt)
+     * or phpseclib's AES if mcrypt not available
+     *
+     * @param string $encdata encrypted data
+     * @param string $secret  the secret
+     *
+     * @return string original data
+     */
+    function PMA_blowfish_decrypt($encdata, $secret)
+    {
+        global $iv;
+        if (! function_exists('mcrypt_encrypt')) {
+            include_once "./libraries/phpseclib/Crypt/AES.php";
+            $cipher = new Crypt_AES(CRYPT_AES_MODE_ECB);
+            $cipher->setKey($secret);
+            return $cipher->decrypt(base64_decode($encdata));
+        } else {
+            $data = base64_decode($encdata);
+            $decrypted = mcrypt_decrypt(
+                MCRYPT_BLOWFISH,
+                $secret,
+                $data,
+                MCRYPT_MODE_CBC,
+                $iv
+            );
+            return trim($decrypted);
+        }
+    }
+
+    //global $iv;
+    if (empty($_COOKIE['pma_mcrypt_iv']) || false === ($iv = base64_decode($_COOKIE['pma_mcrypt_iv'], true))) {
+        $iv = PMA_blowfish_createIV();
+        $GLOBALS['PMA_Config']->setCookie('pma_mcrypt_iv', base64_encode($iv));
+    }
+
+
+    // END of compatibility
+    // for old php, use original blowfish.php
 } else {
     include_once './libraries/blowfish.php';
 }
