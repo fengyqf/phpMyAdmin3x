@@ -43,10 +43,13 @@ function PMA_replication_db_multibox()
  * @param String $submitname - submit button name
  */
 
-function PMA_replication_gui_changemaster($submitname)
+function PMA_replication_gui_changemaster($submitname,$data=NULL)
 {
 
     list($username_length, $hostname_length) = PMA_replication_get_username_hostname_length();
+    $Master_Log_File=isset($data['Master_Log_File']) ? $data['Master_Log_File'] : '';
+    $Master_Log_Pos=isset($data['Master_Log_Pos']) ? $data['Master_Log_Pos'] : '';
+    $Running=isset($data['Running']) ? $data['Running'] : 0;
 
     echo '<form method="post" action="server_replication.php">';
     echo PMA_generate_common_hidden_inputs('', '');
@@ -54,6 +57,9 @@ function PMA_replication_gui_changemaster($submitname)
     echo '  <legend>' . __('Slave configuration') . ' - ' . __('Change or reconfigure master server') . '</legend>';
     echo __('Make sure, you have unique server-id in your configuration file (my.cnf). If not, please add the following line into [mysqld] section:') . '<br />';
     echo '<pre>server-id=' . time() . '</pre>';
+    if($Running){
+        echo '  <div class="notice">Slave is Running, change master may cause Unexpected results!</div>';
+    }
     echo '  <div class="item">';
     echo '    <label for="text_username">' . __('User name') . ':</label>';
     echo '    <input type="text" name="username" id="text_username" maxlength="'. $username_length . '" title="' . __('User name') . '" />';
@@ -68,7 +74,15 @@ function PMA_replication_gui_changemaster($submitname)
     echo '  </div>';
     echo '  <div class="item">';
     echo '     <label for="text_port">' . __('Port') . ':</label>';
-    echo '     <input type="text" id="text_port" name="port" maxlength="6" value="3306"  />';
+    echo '     <input type="text" id="text_port" name="port" maxlength="6" value="3306"  /> leave above blank to keep them unchanged';
+    echo '  </div>';
+    echo '  <div class="item">';
+    echo '    <label for="text_Master_Log_File">' . __('Master_Log_File') . ' :</label>';
+    echo '    <input type="text" id="text_Master_Log_File" name="Master_Log_File" maxlength="100" value="'.$Master_Log_File.'" />';
+    echo '  </div>';
+    echo '  <div class="item">';
+    echo '    <label for="text_Master_Log_Pos">' . __('Master_Log_Pos') . ' :</label>';
+    echo '    <input type="text" id="text_Master_Log_Pos" name="Master_Log_Pos" maxlength="30" value="'.$Master_Log_Pos.'" />';
     echo '  </div>';
     echo ' </fieldset>';
     echo ' <fieldset id="fieldset_user_privtable_footer" class="tblFooters">';

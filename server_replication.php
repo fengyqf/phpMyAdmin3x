@@ -62,14 +62,34 @@ if (isset($GLOBALS['sr_take_action'])) {
         $_SESSION['replication']['sr_action_info'] = __('Unknown error');
 
         // Attempt to connect to the new master server
-        $link_to_master = PMA_replication_connect_to_master($sr['username'], $sr['pma_pw'], $sr['hostname'], $sr['port']);
+        $link_to_master = null;
+        if ($sr['username'] && $sr['hostname']){
+            $link_to_master = PMA_replication_connect_to_master($sr['username'], $sr['pma_pw'], $sr['hostname'], $sr['port']);
+            if ($link_to_master) {
+                $_SESSION['replication']['sr_action_status'] = 'error';
+                $_SESSION['replication']['sr_action_info'] =
+                        sprintf(__('Unable to connect to master %s.'), htmlspecialchars($sr['hostname']));
+            }
+        }
 
-        if (! $link_to_master) {
+        if ($sr['username'] && $sr['hostname'] && ! $link_to_master) {
             $_SESSION['replication']['sr_action_status'] = 'error';
             $_SESSION['replication']['sr_action_info'] = sprintf(__('Unable to connect to master %s.'), htmlspecialchars($sr['hostname']));
         } else {
-            // Read the current master position
-            $position = PMA_replication_slave_bin_log_master($link_to_master);
+            // Read the current master position, or prefer position form form if exists
+            $position = array();
+            if(isset($GLOBALS['try_sync_master_position']) && $GLOBALS['try_sync_master_position'] && $link_to_master){
+                $position = PMA_replication_slave_bin_log_master($link_to_master);
+                if (empty($position)) {
+                    $fx_error=1;
+                    $_SESSION['replication']['sr_action_status'] = 'error';
+                    $_SESSION['replication']['sr_action_info'] = __('Unable to read master log position. Possible privilege problem on master.');
+                }
+            }elseif(isset($GLOBALS['Master_Log_File']) && $GLOBALS['Master_Log_File']){
+                $position = array(  "File"  =>    PMA_sqlAddSlashes($GLOBALS['Master_Log_File']),
+                                    "Position" => (int)($GLOBALS['Master_Log_Pos']),
+                                );
+            }
 
             if (empty($position)) {
                 $_SESSION['replication']['sr_action_status'] = 'error';
@@ -77,7 +97,7 @@ if (isset($GLOBALS['sr_take_action'])) {
             } else {
                 $_SESSION['replication']['m_correct']  = true;
 
-                if (! PMA_replication_slave_change_master($sr['username'], $sr['pma_pw'], $sr['hostname'], $sr['port'], $position, true, false)) {
+                if (! PMA_replication_slave_change_master($sr['username'], $sr['pma_pw'], $sr['hostname'], $sr['port'], $position, true, false,null,$sql_query)) {
                     $_SESSION['replication']['sr_action_status'] = 'error';
                     $_SESSION['replication']['sr_action_info'] = __('Unable to change master');
                 } else {
@@ -385,11 +405,11 @@ if (! isset($GLOBALS['repl_clear_scr'])) {
         echo '  </ul>';
         echo ' </div>';
         echo ' </li>';
-        echo ' <li><a href="#" id="slave_errormanagement_href">' . __('Error management:') . '</a>';
+        echo ' <li><a href="#" id="slave_errormanagement_href">' . __('Error management:') . '</a>(skip next N binlog events)';
         echo ' <div id="slave_errormanagement_gui" style="display: block;">';
         PMA_Message::error(__('Skipping errors might lead into unsynchronized master and slave!'))->display();
         echo '  <ul>';
-        echo '   <li><a href="' . $slave_skip_error_link . '">' . __('Skip current error') . '</a></li>';
+        echo '   <li><a href="' . $slave_skip_error_link . '" title="SQL_SLAVE_SKIP_COUNTER=1">' . __('Skip current error') . '</a></li>';
         echo '   <li>' . __('Skip next');
         echo '    <form method="post" action="server_replication.php">';
         echo PMA_generate_common_hidden_inputs('', '');
@@ -414,7 +434,8 @@ if (! isset($GLOBALS['repl_clear_scr'])) {
     echo '</fieldset>';
 }
 if (isset($GLOBALS['sl_configure'])) {
-    PMA_replication_gui_changemaster("slave_changemaster");
+    $fx_data=PMA_replication_slave_get_master_pos();
+    PMA_replication_gui_changemaster("slave_changemaster",$fx_data);
 }
 require './libraries/footer.inc.php';
 ?>

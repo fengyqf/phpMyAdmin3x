@@ -194,19 +194,27 @@ function PMA_replication_slave_control($action, $control = '', $link = null,$unt
  *
  * @return output of CHANGE MASTER mysql command
  */
-function PMA_replication_slave_change_master($user, $password, $host, $port, $pos, $stop = true, $start = true, $link = null)
+function PMA_replication_slave_change_master($user, $password, $host, $port, $pos, $stop = true, $start = false, $link = null, &$log_sql=null)
 {
     if ($stop) {
         PMA_replication_slave_control("STOP", null, $link);
     }
 
-    $out = PMA_DBI_try_query('CHANGE MASTER TO ' .
-        'MASTER_HOST=\'' . $host . '\',' .
-        'MASTER_PORT=' . ($port * 1) . ',' .
-        'MASTER_USER=\'' . $user . '\',' .
-        'MASTER_PASSWORD=\'' . $password . '\',' .
-        'MASTER_LOG_FILE=\'' . $pos["File"] . '\',' .
-        'MASTER_LOG_POS=' . $pos["Position"] . ';', $link);
+    $sql_s=$sql_g=array();
+    if($host && $user){
+        $tpl="MASTER_HOST='%s', MASTER_PORT=%d, MASTER_USER='%s', MASTER_PASSWORD='%s' ";
+        $sql_s[] = sprintf($tpl, $host, (int)$port, $user, $password);
+        $sql_g[] = sprintf($tpl, $host, (int)$port, $user, '***');
+    }
+    if(isset($pos["File"]) && isset($pos["Position"])){
+        $tmp = sprintf("MASTER_LOG_FILE='%s', MASTER_LOG_POS=%d ", $pos["File"], (int)$pos["Position"] );
+        $sql_s[]=$tmp;
+        $sql_g[]=$tmp;
+    }
+    $sql    ='CHANGE MASTER TO '.implode(', ',$sql_s);
+    $log_sql='CHANGE MASTER TO '.implode(', ',$sql_g);
+
+    $out = PMA_DBI_try_query($sql, $link);
 
     if ($start) {
         PMA_replication_slave_control("START", null, $link);
@@ -250,6 +258,24 @@ function PMA_replication_slave_bin_log_master($link = null)
     if (! empty($data)) {
         $output["File"] = $data[0]["File"];
         $output["Position"] = $data[0]["Position"];
+    }
+    return $output;
+}
+
+function PMA_replication_slave_get_master_pos($link = null)
+{
+    $data = PMA_DBI_fetch_result('SHOW SLAVE STATUS', null, null, $link);
+    $output = array();
+    $keys=array('');
+
+    if (! empty($data)) {
+        $output["Master_Log_File"]      = $data[0]["Master_Log_File"];
+        $output["Read_Master_Log_Pos"]  = $data[0]["Read_Master_Log_Pos"];
+        $output["Relay_Log_File"]       = $data[0]["Relay_Log_File"];
+        $output["Relay_Log_Pos"]        = $data[0]["Relay_Log_Pos"];
+        $output["Relay_Master_Log_File"]= $data[0]["Relay_Master_Log_File"];
+        $output["Master_Log_Pos"]       = $data[0]["Read_Master_Log_Pos"];  // use Relay_Master_Log_File
+        $output["Running"]              = ($data[0]["Slave_IO_Running"]=='Yes'||$data[0]["Slave_SQL_Running"]=='Yes') ? 1 : 0;
     }
     return $output;
 }
