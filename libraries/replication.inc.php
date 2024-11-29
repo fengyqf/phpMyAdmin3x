@@ -156,10 +156,10 @@ function PMA_extract_db_or_table($string, $what = 'db')
  *
  * @return mixed output of PMA_DBI_try_query
  */
-function PMA_replication_slave_control($action, $control = '', $link = null)
+function PMA_replication_slave_control($action, $control = '', $link = null,$until=null,&$log_sql=null)
 {
-    $action = strtoupper($action);
-    $control = strtoupper($control);
+    $action = strtoupper((string)$action);
+    $control = strtoupper((string)$control);
 
     if ($action != "START" && $action != "STOP") {
         return -1;
@@ -167,8 +167,20 @@ function PMA_replication_slave_control($action, $control = '', $link = null)
     if ($control != "SQL_THREAD" && $control != "IO_THREAD" && $control != '') {
         return -1;
     }
-
-    return PMA_DBI_try_query($action . " SLAVE " . $control . ";", $link);
+    // reply to a defined position: START SLAVE UNTIL...
+    if($action == "START" && $control == "SQL_THREAD" && isset($until['Until_Log_File']) && $until['Until_Log_File']){
+        $log_file=$until['Until_Log_File'] ;
+        $pos=isset($until['RELAY_LOG_POS']) ? (int)($until['RELAY_LOG_POS']) : 0 ;
+        if($until['Until_Condition']=='Relay'){
+            $query="START SLAVE SQL_THREAD UNTIL RELAY_LOG_FILE='".PMA_sqlAddSlashes($log_file)."', RELAY_LOG_POS=".$pos.";";
+        }else{
+            $query="START SLAVE SQL_THREAD UNTIL MASTER_LOG_FILE='".PMA_sqlAddSlashes($log_file)."', MASTER_LOG_POS=".$pos.";";
+        }
+    }else{
+        $query=$action . " SLAVE " . $control . ";";
+    }
+    $log_sql .= $query."\r\n";
+    return PMA_DBI_try_query($query, $link);
 }
 /**
  * @param string $user     replication user on master
