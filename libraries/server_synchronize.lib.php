@@ -107,7 +107,7 @@ function PMA_dataDiffInTables($src_db, $trg_db, $src_link, $trg_link, &$matching
         $matching_tables_keys[$matching_table_index] = $is_key;
 
         $source_result_set = PMA_get_column_values($src_db, $matching_table[$matching_table_index], $is_key, $src_link);
-        $source_size = sizeof($source_result_set);
+        $source_size = ($source_result_set ? sizeof($source_result_set) : 0);
 
         $trg_fld_results = PMA_DBI_get_columns($trg_db, $matching_table[$matching_table_index], null, true, $trg_link);
         $all_keys_match = true;
