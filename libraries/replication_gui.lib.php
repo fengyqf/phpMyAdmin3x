@@ -77,6 +77,10 @@ function PMA_replication_gui_changemaster($submitname,$data=NULL)
     echo '     <input type="text" id="text_port" name="port" maxlength="6" value="3306"  /> leave above blank to keep them unchanged';
     echo '  </div>';
     echo '  <div class="item">';
+    echo '    <label for="try_sync_master_position">Master Position:</label>';
+    echo '    <input type="checkbox" id="try_sync_master_position" name="try_sync_master_position" value="1" style="width:2em;" />check to sync from master server, or Specify below';
+    echo '  </div>';
+    echo '  <div class="item">';
     echo '    <label for="text_Master_Log_File">' . __('Master_Log_File') . ' :</label>';
     echo '    <input type="text" id="text_Master_Log_File" name="Master_Log_File" maxlength="100" value="'.$Master_Log_File.'" />';
     echo '  </div>';

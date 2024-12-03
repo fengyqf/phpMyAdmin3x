@@ -73,6 +73,7 @@ if (isset($GLOBALS['sr_take_action'])) {
         }
 
         if ($sr['username'] && $sr['hostname'] && ! $link_to_master) {
+            // seems never run to here, just keep below else-block
             $_SESSION['replication']['sr_action_status'] = 'error';
             $_SESSION['replication']['sr_action_info'] = sprintf(__('Unable to connect to master %s.'), htmlspecialchars($sr['hostname']));
         } else {
@@ -89,14 +90,12 @@ if (isset($GLOBALS['sr_take_action'])) {
                 $position = array(  "File"  =>    PMA_sqlAddSlashes($GLOBALS['Master_Log_File']),
                                     "Position" => (int)($GLOBALS['Master_Log_Pos']),
                                 );
+            }else{
+                $position = array(  "File"  => '',"Position" => 0 );
             }
 
-            if (empty($position)) {
-                $_SESSION['replication']['sr_action_status'] = 'error';
-                $_SESSION['replication']['sr_action_info'] = __('Unable to read master log position. Possible privilege problem on master.');
-            } else {
+            if(!isset($fx_error)) {
                 $_SESSION['replication']['m_correct']  = true;
-
                 if (! PMA_replication_slave_change_master($sr['username'], $sr['pma_pw'], $sr['hostname'], $sr['port'], $position, true, false,null,$sql_query)) {
                     $_SESSION['replication']['sr_action_status'] = 'error';
                     $_SESSION['replication']['sr_action_info'] = __('Unable to change master');
@@ -104,6 +103,7 @@ if (isset($GLOBALS['sr_take_action'])) {
                     $_SESSION['replication']['sr_action_status'] = 'success';
                     $_SESSION['replication']['sr_action_info'] = sprintf(__('Master server changed successfully to %s'), htmlspecialchars($sr['hostname']));
                 }
+                unset($fx_error);
             }
         }
     } elseif (isset($GLOBALS['sr_slave_server_control'])) {
@@ -129,10 +129,24 @@ if (isset($GLOBALS['sr_take_action'])) {
         if (isset($GLOBALS['sr_skip_errors_count'])) {
             $count = $GLOBALS['sr_skip_errors_count'] * 1;
         }
-        PMA_replication_slave_control("STOP",null,null,null,$sql_query);
+        //PMA_replication_slave_control("STOP",null,null,null,$sql_query);
         $tmp_sql="SET GLOBAL SQL_SLAVE_SKIP_COUNTER = ".$count.";" ;
         PMA_DBI_try_query($tmp_sql);                    $sql_query .= "$tmp_sql\r\n";
-        PMA_replication_slave_control("START",null,null,null,$sql_query);
+        $fx_start_slave=1;
+        if(isset($GLOBALS['sr_skip_errors_until'])){
+            $slave_until=array(
+                'Until_Condition' => $slave_Until_Condition,
+                'Until_Log_File' => $slave_Until_Log_File,
+                'Until_Log_Pos' => $slave_Until_Log_Pos,
+                );
+        }elseif(isset($GLOBALS['sr_skip_errors_continue'])){
+            $slave_until=array();
+        }else{
+            $fx_start_slave=0;
+        }
+        if($fx_start_slave==1){
+            PMA_replication_slave_control("START","SQL_THREAD",null,$slave_until,$sql_query);
+        }
 
     } elseif (isset($GLOBALS['sl_sync'])) {
         // TODO username, host and port could be read from 'show slave status',
@@ -200,10 +214,6 @@ require './libraries/server_links.inc.php';
 if($sql_query){
     PMA_showMessage(null, $sql_query, 'success');
     if ($refresh) {
-        //PMA_showMessage(PMA_generate_common_url($GLOBALS['url_params']), null, 'success');
-        //echo PMA_generate_common_url($GLOBALS['url_params']);
-        $sql_query.=' -- Reload this page to check status';
-
         require './libraries/footer.inc.php';
         die();
     }
@@ -228,7 +238,7 @@ if (isset($_SESSION['replication']['sr_action_status']) && isset($_SESSION['repl
 }
 
 if ($server_master_status) {
-    if (! isset($GLOBALS['repl_clear_scr'])) {
+    if (! isset($GLOBALS['repl_clear_scr']) && !isset($GLOBALS['sr_take_action'])) {
         echo '<fieldset>';
         echo '<legend>' . __('Master replication') . '</legend>';
         echo __('This server is configured as master in a replication process.');
@@ -341,15 +351,10 @@ if (! isset($GLOBALS['repl_clear_scr'])) {
         $slave_control_reset_start_link = PMA_generate_common_url($_url_params);
 
         $_url_params = $GLOBALS['url_params'];
+        $_url_params['sr_take_action'] = true;
         $_url_params['sr_slave_skip_error'] = true;
+        $_url_params['sr_skip_errors_count'] = 1;
         $slave_skip_error_link = PMA_generate_common_url($_url_params);
-
-        if ($server_slave_replication[0]['Slave_SQL_Running'] == 'No') {
-            PMA_Message::error(__('Slave SQL Thread not running!'))->display();
-        }
-        if ($server_slave_replication[0]['Slave_IO_Running'] == 'No') {
-            PMA_Message::error(__('Slave IO Thread not running!'))->display();
-        }
 
         $_url_params = $GLOBALS['url_params'];
         $_url_params['sl_configure'] = true;
@@ -357,16 +362,30 @@ if (! isset($GLOBALS['repl_clear_scr'])) {
 
         $reconfiguremaster_link = PMA_generate_common_url($_url_params);
 
-        echo __('Server is configured as slave in a replication process. Would you like to:');
-        echo '<br />';
+        //echo __('Server is configured as slave in a replication process. Would you like to:');
+        //echo '<br />';
         echo '<ul>';
+        echo ' <li>IO Thread: ';
+        if ($server_slave_replication[0]['Slave_IO_Running'] == 'No') {
+            echo PMA_getImage('s_error2.png','Slave IO Thread Stoped');
+        }else{
+            echo PMA_getImage('s_success.png','Slave IO Thread is Running');
+        }
+        echo '  &nbsp;&nbsp; SQL Thread: ';
+        if ($server_slave_replication[0]['Slave_SQL_Running'] == 'No') {
+            echo PMA_getImage('s_error2.png','SQL Thread Stoped');
+        }else{
+            echo PMA_getImage('s_success.png','SQL Thread is Running');
+        }
+        echo '</li>';
         echo ' <li><a href="#" id="slave_status_href">' . __('See slave status table') . '...</a></li>';
         echo PMA_replication_print_status_table('slave', true, false);
         if (isset($_SESSION['replication']['m_correct']) && $_SESSION['replication']['m_correct'] == true) {
             echo ' <li><a href="#" id="slave_synchronization_href">' . __('Synchronize databases with master') . '</a></li>';
-            echo ' <div id="slave_synchronization_gui" style="display: block;">';
+            echo ' <div id="slave_synchronization_gui" style="display: none;">';
             echo '  <form method="post" action="server_replication.php">';
             echo PMA_generate_common_hidden_inputs('', '');
+            echo '   replication use account is used here, maybe not authorized. <br />';
             echo '   <input type="checkbox" name="repl_struc" value="1" checked="checked" disabled="disabled" /> ' . __('Structure') . '<br />'; // this is just for vizualization, it has no other purpose
             echo '   <input type="checkbox" name="repl_data"  value="1" checked="checked" /> ' . __('Data') .' <br />';
             echo '   <input type="hidden" name="sr_take_action" value="1" />';
@@ -390,7 +409,8 @@ if (! isset($GLOBALS['repl_clear_scr'])) {
             echo '   <li>';
             echo '    <form method="post" action="server_replication.php"><span>' . __('START SLAVE UNTIL ').'</span>';
             echo PMA_generate_common_hidden_inputs('', '');
-            PMA_display_html_radio('Until_Condition', array('Master'=>'Master','Relay'=>'Relay'), $slave_Until_Condition, false, true, "");
+            //PMA_display_html_radio('Until_Condition', array('Master'=>'Master','Relay'=>'Relay'), $slave_Until_Condition, false, true, "");
+            echo PMA_generate_html_dropdown('Until_Condition', array('Master'=>'Master_Log_File','Relay'=>'Relay_Log_File'), $slave_Until_Condition,'Until_Condition');
             echo '      Log_File <input type="text" name="Until_Log_File" value="'.$slave_Until_Log_File.'" style="width: 180px" />';
             echo '      Log_Pos <input type="text" name="Until_Log_Pos" value="'.$slave_Until_Log_Pos.'" style="width: 60px" />';
             echo '      <input type="hidden" name="sr_slave_action" value="start" />';
@@ -406,14 +426,24 @@ if (! isset($GLOBALS['repl_clear_scr'])) {
         echo ' </div>';
         echo ' </li>';
         echo ' <li><a href="#" id="slave_errormanagement_href">' . __('Error management:') . '</a>(skip next N binlog events)';
-        echo ' <div id="slave_errormanagement_gui" style="display: block;">';
-        PMA_Message::error(__('Skipping errors might lead into unsynchronized master and slave!'))->display();
+        if ($server_slave_replication[0]['Last_Errno'] == 0 ) {
+            echo ' <div id="slave_errormanagement_gui" style="display: none;">';
+        }
+        PMA_Message::notice(__('Skipping errors might lead into unsynchronized master and slave!'))->display();
+        echo "   <div>Last Error: [{$server_slave_replication[0]['Last_Errno']}] @{$server_slave_replication[0]['Relay_Master_Log_File']}:{$server_slave_replication[0]['Exec_Master_Log_Pos']}</dv><div>{$server_slave_replication[0]['Last_Error']}</div>";
         echo '  <ul>';
         echo '   <li><a href="' . $slave_skip_error_link . '" title="SQL_SLAVE_SKIP_COUNTER=1">' . __('Skip current error') . '</a></li>';
         echo '   <li>' . __('Skip next');
         echo '    <form method="post" action="server_replication.php">';
         echo PMA_generate_common_hidden_inputs('', '');
-        echo '      <input type="text" name="sr_skip_errors_count" value="1" style="width: 30px" />' . __('errors.');
+        echo '      <input type="text" name="sr_skip_errors_count" value="1" style="width: 30px" />' . __('events, ');
+        $fx_tmp_checked=(isset($GLOBALS['sr_skip_errors_continue'])) ? " checked" : '';
+        echo '      <label><input type="checkbox" name="sr_skip_errors_continue" value="1"'.$fx_tmp_checked.' />Start Slave</label>';
+        if($slave_Until_Log_File){
+            $fx_tmp_checked=(isset($GLOBALS['sr_skip_errors_until'])) ? " checked" : '';
+            echo '      <label><input type="checkbox" name="sr_skip_errors_until" value="1"'.$fx_tmp_checked.' />Start Slave until'.' '.$slave_Until_Log_File.':'.$slave_Until_Log_Pos.' </label>';
+        }
+        unset($fx_tmp_checked);
         echo '              <input type="submit" name="sr_slave_skip_error" value="' . __('Go') . '" />';
         echo '      <input type="hidden" name="sr_take_action" value="1" />';
         echo '    </form></li>';

@@ -262,20 +262,42 @@ function PMA_replication_slave_bin_log_master($link = null)
     return $output;
 }
 
-function PMA_replication_slave_get_master_pos($link = null)
+function PMA_replication_slave_get_status($link = null)
 {
     $data = PMA_DBI_fetch_result('SHOW SLAVE STATUS', null, null, $link);
     $output = array();
-    $keys=array('');
 
     if (! empty($data)) {
-        $output["Master_Log_File"]      = $data[0]["Master_Log_File"];
-        $output["Read_Master_Log_Pos"]  = $data[0]["Read_Master_Log_Pos"];
-        $output["Relay_Log_File"]       = $data[0]["Relay_Log_File"];
-        $output["Relay_Log_Pos"]        = $data[0]["Relay_Log_Pos"];
-        $output["Relay_Master_Log_File"]= $data[0]["Relay_Master_Log_File"];
-        $output["Master_Log_Pos"]       = $data[0]["Read_Master_Log_Pos"];  // use Relay_Master_Log_File
-        $output["Running"]              = ($data[0]["Slave_IO_Running"]=='Yes'||$data[0]["Slave_SQL_Running"]=='Yes') ? 1 : 0;
+        $output=$data[0];
+    }
+    return $output;
+}
+
+function PMA_replication_slave_get_master_pos($link = null)
+{
+    $keys=array('');
+    $output = array();
+    $data=PMA_replication_slave_get_status($link);
+    if($data){
+        $output["Master_Log_File"]      = $data["Master_Log_File"];
+        $output["Read_Master_Log_Pos"]  = $data["Read_Master_Log_Pos"];
+        $output["Relay_Log_File"]       = $data["Relay_Log_File"];
+        $output["Relay_Log_Pos"]        = $data["Relay_Log_Pos"];
+        $output["Relay_Master_Log_File"]= $data["Relay_Master_Log_File"];
+        $output["Master_Log_Pos"]       = $data["Read_Master_Log_Pos"];  // use Relay_Master_Log_File
+        $output["Running"]              = ($data["Slave_IO_Running"]=='Yes'||$data["Slave_SQL_Running"]=='Yes') ? 1 : 0;
+    }
+    return $output;
+}
+
+function PMA_replication_slave_get_until($link = null)
+{
+    $output = array();
+    $data=PMA_replication_slave_get_status($link);
+    if($data){
+        $output["Until_Condition"]      = $data["Until_Condition"];
+        $output["Until_Log_File"]       = $data["Until_Log_File"];
+        $output["Until_Log_Pos"]        = $data["Until_Log_Pos"];
     }
     return $output;
 }
