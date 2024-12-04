@@ -154,7 +154,9 @@ if (isset($GLOBALS['sr_take_action'])) {
         $src_link = PMA_replication_connect_to_master($_SESSION['replication']['m_username'], $_SESSION['replication']['m_password'], $_SESSION['replication']['m_hostname'], $_SESSION['replication']['m_port']);
         $trg_link = null; // using null to indicate the current PMA server
 
-        $data = PMA_DBI_fetch_result('SHOW MASTER STATUS', null, null, $src_link); // let's find out, which databases are replicated
+        $data = PMA_DBI_fetch_result(
+        ((PMA_MYSQL_INT_VERSION < 50700) ? 'SHOW MASTER STATUS' : 'SHOW BINARY LOG STATUS'), 
+        null, null, $src_link); // let's find out, which databases are replicated
 
         $do_db     = array();
         $ignore_db = array();
