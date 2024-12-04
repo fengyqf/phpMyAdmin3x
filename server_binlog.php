@@ -21,27 +21,76 @@ require_once './libraries/server_common.inc.php';
  */
 require_once './libraries/server_links.inc.php';
 
+
+
+// -----------------------------------------------------------------------------
+$fx_curr_log=(isset($_REQUEST['log'])) ? $_REQUEST['log'] : null;
+$fxop_binlog=isset($_REQUEST['fxop_binlog']) ? $_REQUEST['fxop_binlog'] : '';
+$fx_reload_binlog=$fx_redirect_binlog=0;
+$fx_sql='';
+if ($fxop_binlog=='do_flush') {
+    if (PMA_MYSQL_INT_VERSION < 50503) {
+        $fx_sql="FLUSH LOGS;";
+    }else{
+        $fx_sql="FLUSH BINARY LOGS;";
+    }
+    PMA_DBI_query($fx_sql);
+    sleep(1);
+    $fx_reload_binlog=1;
+    $fx_redirect_binlog=1;
+}elseif ($fxop_binlog=='do_purge') {
+    $fx_sql="PURGE BINARY LOGS TO '".PMA_sqlAddSlashes($_REQUEST['log'])."';";
+    PMA_DBI_query($fx_sql);
+    sleep(1);
+    $fx_reload_binlog=1;
+}
+
+
+if($fx_reload_binlog){
+    // reload $binary_logs, ref libraries\server_common.inc.php:53
+    $binary_logs = PMA_DRIZZLE
+        ? null
+        : PMA_DBI_fetch_result(
+            ((PMA_MYSQL_INT_VERSION < 50700) ? 'SHOW MASTER LOGS' :  'SHOW BINARY LOGS'),
+            'Log_name', null, null, PMA_DBI_QUERY_UNBUFFERED);
+}
+
+//move $fx_curr_log to the last
+if($fx_redirect_binlog){
+    foreach($binary_logs as $fx_value){
+        $fx_curr_log=$fx_value['Log_name'];
+    }
+    unset($fx_value);
+}
+
+// -----------------------------------------------------------------------------
+
+
+
+
+
+
 $url_params = array();
 
 /**
  * Need to find the real end of rows?
  */
-if (! isset($_REQUEST['pos'])) {
-    $pos = 0;
-} else {
-    /* We need this to be a integer */
-    $pos = (int) $_REQUEST['pos'];
-}
+$pos = isset($_REQUEST['pos']) ? (int) $_REQUEST['pos'] : 0;
+$fromPos = isset($_REQUEST['fromPos']) ? (int) $_REQUEST['fromPos'] : 0;
 
-if (! isset($_REQUEST['log']) || ! array_key_exists($_REQUEST['log'], $binary_logs)) {
+if (! $fx_curr_log || ! array_key_exists($fx_curr_log, $binary_logs)) {
     $_REQUEST['log'] = '';
 } else {
-    $url_params['log'] = $_REQUEST['log'];
+    $url_params['log'] = $fx_curr_log;
 }
 
 $sql_query = 'SHOW BINLOG EVENTS';
-if (! empty($_REQUEST['log'])) {
-    $sql_query .= ' IN \'' . $_REQUEST['log'] . '\'';
+if ($fx_curr_log) {
+    $sql_query .= ' IN \'' . PMA_sqlAddSlashes($fx_curr_log) . '\'';
+}
+if ($fromPos > 0) {
+    $sql_query .= ' FROM ' . $fromPos . '';
+    $url_params['fromPos'] = $fromPos;
 }
 if ($GLOBALS['cfg']['MaxRows'] !== 'all') {
     $sql_query .= ' LIMIT ' . $pos . ', ' . (int) $GLOBALS['cfg']['MaxRows'];
@@ -80,16 +129,21 @@ echo '<h2>' . "\n"
 /**
  * Display log selector.
  */
-if (count($binary_logs) > 1) {
+if (count($binary_logs) >= 1) {
     echo '<form action="server_binlog.php" method="get">';
+    // keep status 'try_purge' in selector
+    if($fxop_binlog=='try_purge'){
+        $url_params['fxop_binlog']='try_purge';
+    }
     echo PMA_generate_common_hidden_inputs($url_params);
     echo '<fieldset><legend>';
     echo __('Select binary log to view');
-    echo '</legend><select name="log">';
+    echo '</legend><select name="log" id="sel_log">';
     $full_size = 0;
+    $fx_last_log='';
     foreach ($binary_logs as $each_log) {
         echo '<option value="' . $each_log['Log_name'] . '"';
-        if ($each_log['Log_name'] == $_REQUEST['log']) {
+        if ($each_log['Log_name'] == $fx_curr_log) {
             echo ' selected="selected"';
         }
         echo '>' . $each_log['Log_name'];
@@ -98,25 +152,51 @@ if (count($binary_logs) > 1) {
             echo ' (' . implode(' ', PMA_formatByteDown($each_log['File_size'], 3, 2)) . ')';
         }
         echo '</option>';
+        $fx_last_log=$each_log['Log_name'];
     }
     echo '</select> ';
+    echo '<input type="text" name="fromPos" id="fromPos" value="'.$fromPos.'" style="width: 60px" title="'.__('Position').'" />';
+    echo '<input type="submit" value="' . __('Go') . '" />';
+    echo '&nbsp;<span>';
     echo count($binary_logs) . ' ' . __('Files') . ', ';
     if ($full_size > 0) {
         echo implode(' ', PMA_formatByteDown($full_size));
     }
-    echo '</fieldset>';
-    echo '<fieldset class="tblFooters">';
-    echo '<input type="submit" value="' . __('Go') . '" />';
+    echo '</span>';
+    $this_url_params = $url_params;
+    //$this_url_params['log']=$fx_last_log;
+    if($fxop_binlog=='try_purge'){
+        $this_url_params['fxop_binlog']='do_purge';
+        $this_url_params['log']=$fx_curr_log;
+        echo ' &nbsp;&nbsp;<span><a href="./server_binlog.php' . PMA_generate_common_url($this_url_params) . '">PURGE BINARY LOGS TO '.$fx_curr_log.'</a></span>';
+    }elseif($fx_curr_log){
+        $this_url_params['log']=$fx_curr_log;
+        $this_url_params['fxop_binlog']='try_purge';
+        echo ' &nbsp;&nbsp;<span><a href="./server_binlog.php' . PMA_generate_common_url($this_url_params) . '" title="purge binary log">Purge...</a></span>';
+        $this_url_params['fxop_binlog']='do_flush';
+        echo ' &nbsp;&nbsp;<span><a href="./server_binlog.php' . PMA_generate_common_url($this_url_params) . '" title="flush binary log">Flush</a></span>';
+    }
+
     echo '</fieldset>';
     echo '</form>';
 }
 
-PMA_showMessage(PMA_Message::success());
+if(isset($fx_sql) && $fx_sql){
+    $sql_query=$fx_sql."\r\n".$sql_query;
+}
+PMA_showMessage(PMA_Message::success(),$sql_query);
 
 /**
  * Displays the page
  */
 ?>
+<script type="text/javascript">
+$(document).ready(function() {
+    $("#sel_log").change(function() {
+        $("#fromPos").val("0");
+    })
+});
+</script>
 <table border="0" cellpadding="2" cellspacing="1">
 <thead>
 <tr>

@@ -52,5 +52,7 @@ if ($is_superuser && !PMA_DRIZZLE) {
  */
 $binary_logs = PMA_DRIZZLE
     ? null
-    : PMA_DBI_fetch_result('SHOW MASTER LOGS', 'Log_name', null, null, PMA_DBI_QUERY_STORE);
+        : PMA_DBI_fetch_result(
+            ((PMA_MYSQL_INT_VERSION < 50700) ? 'SHOW MASTER LOGS' :  'SHOW BINARY LOGS'),
+            'Log_name', null, null, PMA_DBI_QUERY_UNBUFFERED);
 ?>

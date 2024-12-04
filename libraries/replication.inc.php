@@ -12,7 +12,11 @@ if (! defined('PHPMYADMIN')) {
 /**
  * get master replication from server
  */
-$server_master_replication = PMA_DBI_fetch_result('SHOW MASTER STATUS');
+if(PMA_MYSQL_INT_VERSION < 50700){
+    $server_master_replication = PMA_DBI_fetch_result('SHOW MASTER STATUS');
+}else{
+    $server_master_replication = PMA_DBI_fetch_result('SHOW BINARY LOG STATUS');
+}
 
 /**
  * get slave replication from server
@@ -252,7 +256,8 @@ function PMA_replication_connect_to_master($user, $password, $host = null, $port
  */
 function PMA_replication_slave_bin_log_master($link = null)
 {
-    $data = PMA_DBI_fetch_result('SHOW MASTER STATUS', null, null, $link);
+    $sql=(PMA_MYSQL_INT_VERSION < 50700) ? 'SHOW MASTER STATUS' : 'SHOW BINARY LOG STATUS';
+    $data = PMA_DBI_fetch_result($sql, null, null, $link);
     $output = array();
 
     if (! empty($data)) {
@@ -312,7 +317,8 @@ function PMA_replication_slave_get_until($link = null)
 
 function PMA_replication_master_replicated_dbs($link = null)
 {
-    $data = PMA_DBI_fetch_result('SHOW MASTER STATUS', null, null, $link); // let's find out, which databases are replicated
+    $sql=(PMA_MYSQL_INT_VERSION < 50700) ? 'SHOW MASTER STATUS' : 'SHOW BINARY LOG STATUS';
+    $data = PMA_DBI_fetch_result($sql, null, null, $link); // let's find out, which databases are replicated
 
     $do_db     = array();
     $ignore_db = array();
