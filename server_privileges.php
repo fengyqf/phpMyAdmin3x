@@ -2121,7 +2121,7 @@ if (empty($_REQUEST['adduser']) && (! isset($checkprivs) || ! strlen($checkprivs
                     }
                 }
 
-                $initials = PMA_DBI_try_query('SELECT DISTINCT UPPER(LEFT(`User`,1)) FROM `user` ORDER BY `User` ASC', null, PMA_DBI_QUERY_STORE);
+                $initials = PMA_DBI_try_query('SELECT DISTINCT UPPER(LEFT(`User`,1)) as uc1 FROM `user` ORDER BY `uc1` ASC', null, PMA_DBI_QUERY_STORE);
                 while (list($tmp_initial) = PMA_DBI_fetch_row($initials)) {
                     $array_initials[$tmp_initial] = true;
                 }
