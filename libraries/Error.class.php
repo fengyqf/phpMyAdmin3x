@@ -39,7 +39,7 @@ class PMA_Error extends PMA_Message
         E_USER_ERROR         => 'User Error',
         E_USER_WARNING       => 'User Warning',
         E_USER_NOTICE        => 'User Notice',
-        E_STRICT             => 'Runtime Notice',
+        2048                 => 'Runtime Notice',  // E_STRICT==2048, deprecated php8.4
         E_DEPRECATED         => 'Deprecation Notice',
         E_RECOVERABLE_ERROR  => 'Catchable Fatal Error',
     );
@@ -61,7 +61,7 @@ class PMA_Error extends PMA_Message
         E_USER_ERROR         => 'error',
         E_USER_WARNING       => 'error',
         E_USER_NOTICE        => 'notice',
-        E_STRICT             => 'notice',
+        2048                 => 'notice',  // E_STRICT==2048, deprecated php8.4
         E_DEPRECATED         => 'notice',
         E_RECOVERABLE_ERROR  => 'error',
     );
