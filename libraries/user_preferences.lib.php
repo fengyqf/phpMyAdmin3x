@@ -163,7 +163,7 @@ function PMA_apply_userprefs(array $config_data)
  *
  * @return array
  */
-function PMA_read_userprefs_fieldnames(array $forms = null)
+function PMA_read_userprefs_fieldnames(array $forms = array())
 {
     static $names;
 

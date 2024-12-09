@@ -12,16 +12,11 @@ if (! defined('PHPMYADMIN')) {
 /**
  * get master replication from server
  */
-if(PMA_MYSQL_INT_VERSION < 50700){
-    $server_master_replication = PMA_DBI_fetch_result('SHOW MASTER STATUS');
-}else{
-    $server_master_replication = PMA_DBI_fetch_result('SHOW BINARY LOG STATUS');
-}
-
+$server_master_replication = PMA_fx_show_master_status();
 /**
  * get slave replication from server
  */
-$server_slave_replication = PMA_DBI_fetch_result('SHOW SLAVE STATUS');
+$server_slave_replication = PMA_fx_show_slave_status();
 
 /**
  * replication types
@@ -41,6 +36,7 @@ $master_variables = array(
 
 /**
  * Define variables for slave status
+ *   24/12/09   maybe it is useless already, but keep it still
  */
 $slave_variables  = array(
     'Slave_IO_State',
@@ -101,43 +97,41 @@ $slave_variables_oks = array(
  */
 $replication_info = array();
 
-foreach ($replication_types as $type) {
-    if (count(${"server_{$type}_replication"}) > 0) {
-        ${"server_{$type}_status"} = true;
-        $replication_info[$type]['status'] = true;
-    } else {
-        ${"server_{$type}_status"} = false;
-        $replication_info[$type]['status'] = false;
-    }
-    if (${"server_{$type}_status"}) {
-        if ($type == "master") {
-            ${"server_{$type}_Do_DB"} = explode(",", $server_master_replication[0]["Binlog_Do_DB"]);
-            $replication_info[$type]['Do_DB'] = ${"server_{$type}_Do_DB"};
-
-            ${"server_{$type}_Ignore_DB"} = explode(",", $server_master_replication[0]["Binlog_Ignore_DB"]);
-            $replication_info[$type]['Ignore_DB'] = ${"server_{$type}_Ignore_DB"};
-        } elseif ($type == "slave") {
-            ${"server_{$type}_Do_DB"} = explode(",", $server_slave_replication[0]["Replicate_Do_DB"]);
-            $replication_info[$type]['Do_DB'] = ${"server_{$type}_Do_DB"};
-
-            ${"server_{$type}_Ignore_DB"} = explode(",", $server_slave_replication[0]["Replicate_Ignore_DB"]);
-            $replication_info[$type]['Ignore_DB'] = ${"server_{$type}_Ignore_DB"};
-
-            ${"server_{$type}_Do_Table"} = explode(",", $server_slave_replication[0]["Replicate_Do_Table"]);
-            $replication_info[$type]['Do_Table'] = ${"server_{$type}_Do_Table"};
-
-            ${"server_{$type}_Ignore_Table"} = explode(",", $server_slave_replication[0]["Replicate_Ignore_Table"]);
-            $replication_info[$type]['Ignore_Table'] = ${"server_{$type}_Ignore_Table"};
-
-            ${"server_{$type}_Wild_Do_Table"} = explode(",", $server_slave_replication[0]["Replicate_Wild_Do_Table"]);
-            $replication_info[$type]['Wild_Do_Table'] = ${"server_{$type}_Wild_Do_Table"};
-
-            ${"server_{$type}_Wild_Ignore_Table"} = explode(",", $server_slave_replication[0]["Replicate_Wild_Ignore_Table"]);
-            $replication_info[$type]['Wild_Ignore_Table'] = ${"server_{$type}_Wild_Ignore_Table"};
-        }
-    }
+if(count($server_master_replication) > 0){
+    $server_master_status       = true;
+    $replication_info['master'] = array(
+        'status'   => true,
+        'Do_DB'    => explode(",", $server_master_replication[0]["Binlog_Do_DB"]),
+        'Ignore_DB'    => explode(",", $server_master_replication[0]["Binlog_Ignore_DB"]),
+    );
+    // vars below seem never used
+    $server_master_Do_DB        = explode(",", $server_master_replication[0]["Binlog_Do_DB"]);
+    $server_master_Ignore_DB    = explode(",", $server_master_replication[0]["Binlog_Ignore_DB"]);
+}else{
+    $server_master_status = false;
 }
+if(count($server_slave_replication) > 0){
+    $server_slave_status        = true;
+    $replication_info['slave']  = array(
+        'status'            => true,
+        'Do_DB'             => explode(",", $server_slave_replication[0]["Replicate_Do_DB"]),
+        'Ignore_DB'         => explode(",", $server_slave_replication[0]["Replicate_Ignore_DB"]),
+        'Do_Table'          => explode(",", $server_slave_replication[0]["Replicate_Do_Table"]),
+        'Ignore_Table'      => explode(",", $server_slave_replication[0]["Replicate_Ignore_Table"]),
+        'Wild_Do_Table'     => explode(",", $server_slave_replication[0]["Replicate_Wild_Do_Table"]),
+        'Wild_Ignore_Table' => explode(",", $server_slave_replication[0]["Replicate_Wild_Ignore_Table"]),
+    );
+    // vars below seem never used
+    $server_slave_Do_DB        = explode(",", $server_slave_replication[0]["Replicate_Do_DB"]);
+    $server_slave_Ignore_DB    = explode(",", $server_slave_replication[0]["Replicate_Ignore_DB"]);
+    $server_slave_Do_Table     = explode(",", $server_slave_replication[0]["Replicate_Do_Table"]);
+    $server_slave_Ignore_Table = explode(",", $server_slave_replication[0]["Replicate_Ignore_Table"]);
+    $server_slave_Wild_Do_Table        = explode(",", $server_slave_replication[0]["Replicate_Wild_Do_Table"]);
+    $server_slave_Wild_Ignore_Table    = explode(",", $server_slave_replication[0]["Replicate_Wild_Ignore_Table"]);
 
+}else{
+    $server_slave_status = false;
+}
 
 /**
  * @param $string contains "dbname.tablename"
@@ -162,6 +156,13 @@ function PMA_extract_db_or_table($string, $what = 'db')
  */
 function PMA_replication_slave_control($action, $control = '', $link = null,$until=null,&$log_sql=null)
 {
+    if(PMA_MYSQL_SERVER_TYPE == 'MariaDB' && PMA_MYSQL_INT_VERSION >= 100501){
+        $slvtx='REPLICA';
+    }elseif(PMA_MYSQL_SERVER_TYPE == 'MySQL' && PMA_MYSQL_INT_VERSION >= 80022){
+        $slvtx='REPLICA';
+    }else{
+        $slvtx='SLAVE';
+    }
     $action = strtoupper((string)$action);
     $control = strtoupper((string)$control);
 
@@ -176,12 +177,12 @@ function PMA_replication_slave_control($action, $control = '', $link = null,$unt
         $log_file=$until['Until_Log_File'] ;
         $pos=isset($until['RELAY_LOG_POS']) ? (int)($until['RELAY_LOG_POS']) : 0 ;
         if($until['Until_Condition']=='Relay'){
-            $query="START SLAVE SQL_THREAD UNTIL RELAY_LOG_FILE='".PMA_sqlAddSlashes($log_file)."', RELAY_LOG_POS=".$pos.";";
+            $query="START $slvtx SQL_THREAD UNTIL RELAY_LOG_FILE='".PMA_sqlAddSlashes($log_file)."', RELAY_LOG_POS=".$pos.";";
         }else{
-            $query="START SLAVE SQL_THREAD UNTIL MASTER_LOG_FILE='".PMA_sqlAddSlashes($log_file)."', MASTER_LOG_POS=".$pos.";";
+            $query="START $slvtx SQL_THREAD UNTIL MASTER_LOG_FILE='".PMA_sqlAddSlashes($log_file)."', MASTER_LOG_POS=".$pos.";";
         }
     }else{
-        $query=$action . " SLAVE " . $control . ";";
+        $query=$action . " $slvtx " . $control . ";";
     }
     $log_sql .= $query."\r\n";
     return PMA_DBI_try_query($query, $link);
@@ -256,8 +257,7 @@ function PMA_replication_connect_to_master($user, $password, $host = null, $port
  */
 function PMA_replication_slave_bin_log_master($link = null)
 {
-    $sql=(PMA_MYSQL_INT_VERSION < 50700) ? 'SHOW MASTER STATUS' : 'SHOW BINARY LOG STATUS';
-    $data = PMA_DBI_fetch_result($sql, null, null, $link);
+    $data = PMA_fx_show_master_status($link);
     $output = array();
 
     if (! empty($data)) {
@@ -269,7 +269,7 @@ function PMA_replication_slave_bin_log_master($link = null)
 
 function PMA_replication_slave_get_status($link = null)
 {
-    $data = PMA_DBI_fetch_result('SHOW SLAVE STATUS', null, null, $link);
+    $data = PMA_fx_show_slave_status($link);
     $output = array();
 
     if (! empty($data)) {
@@ -317,8 +317,7 @@ function PMA_replication_slave_get_until($link = null)
 
 function PMA_replication_master_replicated_dbs($link = null)
 {
-    $sql=(PMA_MYSQL_INT_VERSION < 50700) ? 'SHOW MASTER STATUS' : 'SHOW BINARY LOG STATUS';
-    $data = PMA_DBI_fetch_result($sql, null, null, $link); // let's find out, which databases are replicated
+    $data = PMA_fx_show_slave_status($link);
 
     $do_db     = array();
     $ignore_db = array();

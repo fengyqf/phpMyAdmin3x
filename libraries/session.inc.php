@@ -40,7 +40,9 @@ if (!empty($path)) {
 }
 
 // but not all user allow cookies
-@ini_set('session.use_only_cookies', false);
+if(PHP_VERSION_ID < 70100 ){  // deprecated php8.4+
+    @ini_set('session.use_only_cookies', false);
+}
 // do not force transparent session ids, see bug #3398788
 //@ini_set('session.use_trans_sid', true);
 @ini_set('url_rewriter.tags',

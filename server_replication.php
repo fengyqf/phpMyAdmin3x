@@ -154,9 +154,7 @@ if (isset($GLOBALS['sr_take_action'])) {
         $src_link = PMA_replication_connect_to_master($_SESSION['replication']['m_username'], $_SESSION['replication']['m_password'], $_SESSION['replication']['m_hostname'], $_SESSION['replication']['m_port']);
         $trg_link = null; // using null to indicate the current PMA server
 
-        $data = PMA_DBI_fetch_result(
-        ((PMA_MYSQL_INT_VERSION < 50700) ? 'SHOW MASTER STATUS' : 'SHOW BINARY LOG STATUS'), 
-        null, null, $src_link); // let's find out, which databases are replicated
+        $data = PMA_fx_show_master_status($src_link); // let's find out, which databases are replicated
 
         $do_db     = array();
         $ignore_db = array();
@@ -311,6 +309,21 @@ if (! isset($GLOBALS['repl_clear_scr'])) {
     echo '<fieldset>';
     echo '<legend>' . __('Slave replication') . '</legend>';
     if ($server_slave_status) {
+        // status vars, amend
+        $fx_status=$server_slave_replication[0];
+        if(!isset($fx_status['Slave_IO_Running']) && isset($fx_status['Replica_IO_Running'])) {
+            $server_slave_replication[0]['Slave_IO_Running']=$fx_status['Replica_IO_Running'];
+        }
+        if(!isset($fx_status['Slave_SQL_Running']) && isset($fx_status['Replica_SQL_Running'])) {
+            $server_slave_replication[0]['Slave_SQL_Running']=$fx_status['Replica_SQL_Running'];
+        }
+        if(!isset($fx_status['Relay_Master_Log_File']) && isset($fx_status['Relay_Source_Log_File'])) {
+            $server_slave_replication[0]['Relay_Master_Log_File']=$fx_status['Relay_Source_Log_File'];
+        }
+        if(!isset($fx_status['Exec_Master_Log_Pos']) && isset($fx_status['Exec_Source_Log_Pos'])) {
+            $server_slave_replication[0]['Exec_Master_Log_Pos']=$fx_status['Exec_Source_Log_Pos'];
+        }
+
         echo '<div id="slave_configuration_gui">';
 
         $_url_params = $GLOBALS['url_params'];
