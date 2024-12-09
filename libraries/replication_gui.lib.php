@@ -139,29 +139,30 @@ function PMA_replication_print_status_table($type, $hidden = false, $title = tru
     echo '   </thead>';
     echo '   <tbody>';
 
+    $svars=${"server_{$type}_replication"}[0];
+
     $odd_row = true;
-    foreach (${"{$type}_variables"} as $variable) {
+    foreach ($svars as $key => $vv) {
         echo '   <tr class="' . ($odd_row ? 'odd' : 'even') . '">';
         echo '     <td class="name">';
-        echo        $variable;
+        echo        $key;
         echo '     </td>';
         echo '     <td class="value">';
 
-
         // TODO change to regexp or something, to allow for negative match
-        if (isset(${"{$type}_variables_alerts"}[$variable])
-            && ${"{$type}_variables_alerts"}[$variable] == ${"server_{$type}_replication"}[0][$variable]
+        if (isset(${"{$type}_variables_alerts"}[$key])
+            && ${"{$type}_variables_alerts"}[$key] == $svars[$key]
         ) {
             echo '<span class="attention">';
 
-        } elseif (isset(${"{$type}_variables_oks"}[$variable])
-            && ${"{$type}_variables_oks"}[$variable] == ${"server_{$type}_replication"}[0][$variable]
+        } elseif (isset(${"{$type}_variables_oks"}[$key])
+            && ${"{$type}_variables_oks"}[$key] == $svars[$key]
         ) {
             echo '<span class="allfine">';
         } else {
             echo '<span>';
         }
-        echo ${"server_{$type}_replication"}[0][$variable];
+        echo $svars[$key];
         echo '</span>';
 
         echo '  </td>';

@@ -47,12 +47,24 @@ if ($is_superuser && !PMA_DRIZZLE) {
     PMA_DBI_select_db('mysql', $userlink);
 }
 
+function fx_get_binary_logs_list()
+{
+    if(PMA_DRIZZLE){
+        return null;
+    }elseif(PMA_MYSQL_SERVER_TYPE == 'MySQL' && PMA_MYSQL_INT_VERSION >=50700){
+        $sql='SHOW BINARY LOGS';
+    }elseif(PMA_MYSQL_SERVER_TYPE == 'MariaDB' && PMA_MYSQL_INT_VERSION >=100010){
+        $sql='SHOW BINARY LOGS';
+    }else{
+        $sql='SHOW MASTER LOGS';
+    }
+    return PMA_DBI_fetch_result($sql,'Log_name', null, null, PMA_DBI_QUERY_UNBUFFERED);
+}
+
 /**
  * @global array binary log files
  */
-$binary_logs = PMA_DRIZZLE
-    ? null
-        : PMA_DBI_fetch_result(
-            ((PMA_MYSQL_INT_VERSION < 50700) ? 'SHOW MASTER LOGS' :  'SHOW BINARY LOGS'),
-            'Log_name', null, null, PMA_DBI_QUERY_UNBUFFERED);
+$binary_logs = PMA_DRIZZLE ? null : fx_get_binary_logs_list();
+
+
 ?>

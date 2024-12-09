@@ -3801,6 +3801,50 @@ function PMA_parseEnumSetValues($definition, $escapeHtml = true)
 }
 
 
+/** SHOW MASTER STATUS/SHOW SLAVE STATUS, ....
+*/
+
+function PMA_fx_show_master_status($link = null)
+{
+    /*  https://mariadb.com/kb/en/show-binlog-status/
+        SHOW MASTER STATUS
+        SHOW BINLOG STATUS -- From MariaDB 10.5.2
+    */
+    if(PMA_MYSQL_SERVER_TYPE == 'MariaDB' && PMA_MYSQL_INT_VERSION >= 100502){
+        $sql = 'SHOW BINLOG STATUS';
+    }elseif(PMA_MYSQL_SERVER_TYPE == 'MySQL' && PMA_MYSQL_INT_VERSION >= 50700){
+        $sql = 'SHOW BINARY LOG STATUS';
+    }else{
+        $sql = 'SHOW MASTER STATUS';
+    }
+    return PMA_DBI_fetch_result($sql,null,null,$link);
+}
+
+
+function PMA_fx_show_slave_status()
+{
+    /*  https://mariadb.com/kb/en/show-replica-status/
+        SHOW SLAVE ["connection_name"] STATUS [FOR CHANNEL "connection_name"]
+        SHOW REPLICA ["connection_name"] STATUS -- From MariaDB 10.5.1
+        or
+        SHOW ALL SLAVES STATUS
+        SHOW ALL REPLICAS STATUS -- From MariaDB 10.5.1
+
+        https://dev.mysql.com/doc/refman/8.0/en/show-slave-status.html
+        SHOW {SLAVE | REPLICA} STATUS [FOR CHANNEL channel]
+    */
+    if(PMA_MYSQL_SERVER_TYPE == 'MariaDB' && PMA_MYSQL_INT_VERSION >= 100501){
+        $sql = 'SHOW REPLICA STATUS';
+    }elseif(PMA_MYSQL_SERVER_TYPE == 'MySQL' && PMA_MYSQL_INT_VERSION >= 80022){
+        $sql = 'SHOW REPLICA STATUS';
+    }else{
+        $sql = 'SHOW SLAVE STATUS';
+    }
+    $data=PMA_DBI_fetch_result($sql);
+    return $data;
+}
+
+
 function fsfx_h_size($size=0,$unit='')
 {
     if( ($size > 1048576 && $unit=='') || $unit=='M'|| $unit=='m'){
