@@ -131,7 +131,7 @@ class PMA_Error_Handler
         switch ($error->getNumber()) {
             case E_USER_NOTICE:
             case E_USER_WARNING:
-            case E_STRICT:
+            case 2048:              // E_STRICT==2048, deprecated php8.4
             case E_DEPRECATED:
             case E_NOTICE:
             case E_WARNING:
