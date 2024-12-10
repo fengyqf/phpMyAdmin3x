@@ -125,6 +125,7 @@ function PMA_getHiddenFields($values, $pre = '')
             // do not generate an ending "\n" because
             // PMA_generate_common_hidden_inputs() is sometimes called
             // from a JS document.write()
+            if(is_null($value)) { $value=''; }
             $fields .= '<input type="hidden" name="' . htmlspecialchars($name)
                 . '" value="' . htmlspecialchars($value) . '" />';
         }
