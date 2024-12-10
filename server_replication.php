@@ -312,16 +312,16 @@ if (! isset($GLOBALS['repl_clear_scr'])) {
         // status vars, amend
         $fx_status=$server_slave_replication[0];
         if(!isset($fx_status['Slave_IO_Running']) && isset($fx_status['Replica_IO_Running'])) {
-            $server_slave_replication[0]['Slave_IO_Running']=$fx_status['Replica_IO_Running'];
+            $fx_status['Slave_IO_Running']=$fx_status['Replica_IO_Running'];
         }
         if(!isset($fx_status['Slave_SQL_Running']) && isset($fx_status['Replica_SQL_Running'])) {
-            $server_slave_replication[0]['Slave_SQL_Running']=$fx_status['Replica_SQL_Running'];
+            $fx_status['Slave_SQL_Running']=$fx_status['Replica_SQL_Running'];
         }
         if(!isset($fx_status['Relay_Master_Log_File']) && isset($fx_status['Relay_Source_Log_File'])) {
-            $server_slave_replication[0]['Relay_Master_Log_File']=$fx_status['Relay_Source_Log_File'];
+            $fx_status['Relay_Master_Log_File']=$fx_status['Relay_Source_Log_File'];
         }
         if(!isset($fx_status['Exec_Master_Log_Pos']) && isset($fx_status['Exec_Source_Log_Pos'])) {
-            $server_slave_replication[0]['Exec_Master_Log_Pos']=$fx_status['Exec_Source_Log_Pos'];
+            $fx_status['Exec_Master_Log_Pos']=$fx_status['Exec_Source_Log_Pos'];
         }
 
         echo '<div id="slave_configuration_gui">';
@@ -330,7 +330,7 @@ if (! isset($GLOBALS['repl_clear_scr'])) {
         $_url_params['sr_take_action'] = true;
         $_url_params['sr_slave_server_control'] = true;
 
-        if ($server_slave_replication[0]['Slave_IO_Running'] == 'No') {
+        if ($fx_status['Slave_IO_Running'] == 'No') {
             $_url_params['sr_slave_action'] = 'start';
         } else {
             $_url_params['sr_slave_action'] = 'stop';
@@ -339,7 +339,7 @@ if (! isset($GLOBALS['repl_clear_scr'])) {
         $_url_params['sr_slave_control_parm'] = 'IO_THREAD';
         $slave_control_io_link = PMA_generate_common_url($_url_params);
 
-        if ($server_slave_replication[0]['Slave_SQL_Running'] == 'No') {
+        if ($fx_status['Slave_SQL_Running'] == 'No') {
             $_url_params['sr_slave_action'] = 'start';
         } else {
             $_url_params['sr_slave_action'] = 'stop';
@@ -348,8 +348,8 @@ if (! isset($GLOBALS['repl_clear_scr'])) {
         $_url_params['sr_slave_control_parm'] = 'SQL_THREAD';
         $slave_control_sql_link = PMA_generate_common_url($_url_params);
 
-        if ($server_slave_replication[0]['Slave_IO_Running'] == 'No'
-            || $server_slave_replication[0]['Slave_SQL_Running'] == 'No'
+        if ($fx_status['Slave_IO_Running'] == 'No'
+            || $fx_status['Slave_SQL_Running'] == 'No'
         ) {
             $_url_params['sr_slave_action'] = 'start';
         } else {
@@ -381,13 +381,13 @@ if (! isset($GLOBALS['repl_clear_scr'])) {
         //echo '<br />';
         echo '<ul>';
         echo ' <li>IO Thread: ';
-        if ($server_slave_replication[0]['Slave_IO_Running'] == 'No') {
+        if ($fx_status['Slave_IO_Running'] == 'No') {
             echo PMA_getImage('s_error2.png','Slave IO Thread Stoped');
         }else{
             echo PMA_getImage('s_success.png','Slave IO Thread is Running');
         }
         echo '  &nbsp;&nbsp; SQL Thread: ';
-        if ($server_slave_replication[0]['Slave_SQL_Running'] == 'No') {
+        if ($fx_status['Slave_SQL_Running'] == 'No') {
             echo PMA_getImage('s_error2.png','SQL Thread Stoped');
         }else{
             echo PMA_getImage('s_success.png','SQL Thread is Running');
@@ -411,15 +411,15 @@ if (! isset($GLOBALS['repl_clear_scr'])) {
         echo ' <li><a href="#" id="slave_control_href">' . __('Control slave:') . '</a>';
         echo ' <div id="slave_control_gui" style="display: block;">';
         echo '  <ul>';
-        echo '   <li><a href="'. $slave_control_full_link . '">' . (($server_slave_replication[0]['Slave_IO_Running'] == 'No' || $server_slave_replication[0]['Slave_SQL_Running'] == 'No') ? __('Full start') : __('Full stop')) . ' </a></li>';
+        echo '   <li><a href="'. $slave_control_full_link . '">' . (($fx_status['Slave_IO_Running'] == 'No' || $fx_status['Slave_SQL_Running'] == 'No') ? __('Full start') : __('Full stop')) . ' </a></li>';
         echo '   <li><a href="'. $slave_control_reset_link . '">' . __('Reset slave') . '</a></li>';
         echo '   <li><a href="'. $slave_control_reset_start_link . '">' . __('Reset slave') .','. __('Full start') .'</a></li>';
-        if ($server_slave_replication[0]['Slave_IO_Running'] == 'No') {
+        if ($fx_status['Slave_IO_Running'] == 'No') {
             echo '   <li><a href="' . $slave_control_io_link . '">' . __('Start IO Thread only') . '</a></li>';
         } else {
             echo '   <li><a href="' . $slave_control_io_link . '">' . __('Stop IO Thread only') . '</a></li>';
         }
-        if ($server_slave_replication[0]['Slave_SQL_Running'] == 'No') {
+        if ($fx_status['Slave_SQL_Running'] == 'No') {
             echo '   <li><a href="' . $slave_control_sql_link . '">' . __('Start SQL Thread only') . '</a></li>';
             echo '   <li>';
             echo '    <form method="post" action="server_replication.php"><span>' . __('START SLAVE UNTIL ').'</span>';
@@ -441,11 +441,11 @@ if (! isset($GLOBALS['repl_clear_scr'])) {
         echo ' </div>';
         echo ' </li>';
         echo ' <li><a href="#" id="slave_errormanagement_href">' . __('Error management:') . '</a>(skip next N binlog events)';
-        if ($server_slave_replication[0]['Last_Errno'] == 0 ) {
+        if ($fx_status['Last_Errno'] == 0 ) {
             echo ' <div id="slave_errormanagement_gui" style="display: none;">';
         }
         PMA_Message::notice(__('Skipping errors might lead into unsynchronized master and slave!'))->display();
-        echo "   <div>Last Error: [{$server_slave_replication[0]['Last_Errno']}] @{$server_slave_replication[0]['Relay_Master_Log_File']}:{$server_slave_replication[0]['Exec_Master_Log_Pos']}</dv><div>{$server_slave_replication[0]['Last_Error']}</div>";
+        echo "   <div>Last Error: [{$fx_status['Last_Errno']}] @{$fx_status['Relay_Master_Log_File']}:{$fx_status['Exec_Master_Log_Pos']}</dv><div>{$fx_status['Last_Error']}</div>";
         echo '  <ul>';
         echo '   <li><a href="' . $slave_skip_error_link . '" title="SQL_SLAVE_SKIP_COUNTER=1">' . __('Skip current error') . '</a></li>';
         echo '   <li>' . __('Skip next');
