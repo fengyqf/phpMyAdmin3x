@@ -24,8 +24,15 @@ require_once './libraries/server_links.inc.php';
 
 
 // -----------------------------------------------------------------------------
-$fx_curr_log=(isset($_REQUEST['log'])) ? $_REQUEST['log'] : null;
+$fx_curr_log=(isset($_REQUEST['log'])) ? trim($_REQUEST['log']) : null;
 $fxop_binlog=isset($_REQUEST['fxop_binlog']) ? $_REQUEST['fxop_binlog'] : '';
+
+if(isset($_REQUEST['bl_type']) && $_REQUEST['bl_type']=='RELAYLOG'){
+    $bl_type='RELAYLOG';
+}else{
+    $bl_type='BINLOG';
+}
+
 $fx_reload_binlog=$fx_redirect_binlog=0;
 $fx_sql='';
 if ($fxop_binlog=='do_flush') {
@@ -81,6 +88,10 @@ if (! $fx_curr_log || ! array_key_exists($fx_curr_log, $binary_logs)) {
 }
 
 $sql_query = 'SHOW BINLOG EVENTS';
+if($bl_type=='RELAYLOG'){
+    $sql_query = 'SHOW RELAYLOG EVENTS';
+    $url_params['bl_type']=$bl_type;
+}
 if ($fx_curr_log) {
     $sql_query .= ' IN \'' . PMA_sqlAddSlashes($fx_curr_log) . '\'';
 }
@@ -125,7 +136,21 @@ echo '<h2>' . "\n"
 /**
  * Display log selector.
  */
-if (count($binary_logs) >= 1) {
+if($bl_type=='RELAYLOG'){
+    echo '<form action="server_binlog.php" method="get">';
+    echo PMA_generate_common_hidden_inputs($url_params);
+    echo '<fieldset><legend>input RelayLog filename to show</legend>';
+    echo '<input type="text" name="log" value="'.$fx_curr_log.'" style="width: 260px" >';
+    echo '<input type="text" name="fromPos" id="fromPos" value="'.$fromPos.'" style="width: 60px" title="'.__('Position').'" />';
+    echo '<input type="submit" value="' . __('Go') . '" />';
+    echo '&nbsp;<span>';
+    $this_url_params = $url_params;
+    $this_url_params['bl_type']='';
+    echo ' &nbsp; | &nbsp;<span><a href="./server_binlog.php' . PMA_generate_common_url($this_url_params) . '">Binlog</a>';
+    echo '</span>';
+    echo '</fieldset>';
+    echo '</form>';
+}elseif (count($binary_logs) >= 1) {
     echo '<form action="server_binlog.php" method="get">';
     // keep status 'try_purge' in selector
     if($fxop_binlog=='try_purge'){
@@ -136,11 +161,19 @@ if (count($binary_logs) >= 1) {
     echo __('Select binary log to view');
     echo '</legend><select name="log" id="sel_log">';
     $full_size = 0;
-    $fx_last_log='';
+    $fx_next_log=$fx_last_log='';
+    $fx_lognames=array();
     foreach ($binary_logs as $each_log) {
         echo '<option value="' . $each_log['Log_name'] . '"';
+        if(!$fx_curr_log){
+            $fx_curr_log=$each_log['Log_name'];
+        }
+        if($fx_next_log=='Yes'){
+            $fx_next_log=$each_log['Log_name'];
+        }
         if ($each_log['Log_name'] == $fx_curr_log) {
             echo ' selected="selected"';
+            $fx_next_log='Yes';
         }
         echo '>' . $each_log['Log_name'];
         if (isset($each_log['File_size'])) {
@@ -149,6 +182,10 @@ if (count($binary_logs) >= 1) {
         }
         echo '</option>';
         $fx_last_log=$each_log['Log_name'];
+        $fx_lognames[]=$each_log['Log_name'];
+    }
+    if($fx_next_log=='Yes'){
+        $fx_next_log='';
     }
     echo '</select> ';
     echo '<input type="text" name="fromPos" id="fromPos" value="'.$fromPos.'" style="width: 60px" title="'.__('Position').'" />';
@@ -161,6 +198,12 @@ if (count($binary_logs) >= 1) {
     echo '</span>';
     $this_url_params = $url_params;
     //$this_url_params['log']=$fx_last_log;
+    if($fx_next_log){
+        $this_url_params['log']=$fx_next_log;
+        echo ' &nbsp;&nbsp;<span><a href="./server_binlog.php' . PMA_generate_common_url($this_url_params) . '">Next</a></span>';
+    }else{
+        echo ' &nbsp;&nbsp;<span style="color:#999999;">Next</a></span>';
+    }
     if($fxop_binlog=='try_purge'){
         $this_url_params['fxop_binlog']='do_purge';
         $this_url_params['log']=$fx_curr_log;
@@ -172,6 +215,10 @@ if (count($binary_logs) >= 1) {
         $this_url_params['fxop_binlog']='do_flush';
         echo ' &nbsp;&nbsp;<span><a href="./server_binlog.php' . PMA_generate_common_url($this_url_params) . '" title="flush binary log">Flush</a></span>';
     }
+    $this_url_params = $url_params;
+    $this_url_params['log']=null;
+    $this_url_params['bl_type']='RELAYLOG';
+    echo ' &nbsp; | &nbsp;<span><a href="./server_binlog.php' . PMA_generate_common_url($this_url_params) . '">RelayLog</a></span>';
 
     echo '</fieldset>';
     echo '</form>';
@@ -270,7 +317,7 @@ while ($value = PMA_DBI_fetch_assoc($result)) {
     }
     ?>
 <tr class="noclick <?php echo $odd_row ? 'odd' : 'even'; ?>">
-    <td>&nbsp;<?php echo $value['Log_name']; ?>&nbsp;</td>
+    <td><?php echo $value['Log_name']; ?></td>
     <td align="right">&nbsp;<?php echo $value['Pos']; ?>&nbsp;</td>
     <td>&nbsp;<?php echo $value['Event_type']; ?>&nbsp;</td>
     <td align="right">&nbsp;<?php echo $value['Server_id']; ?>&nbsp;</td>

@@ -83,10 +83,14 @@ $slave_variables  = array(
 $slave_variables_alerts = array(
     'Slave_IO_Running' => 'No',
     'Slave_SQL_Running' => 'No',
+    'Replica_IO_Running' => 'No',
+    'Replica_SQL_Running' => 'No',
 );
 $slave_variables_oks = array(
     'Slave_IO_Running' => 'Yes',
     'Slave_SQL_Running' => 'Yes',
+    'Replica_IO_Running' => 'Yes',
+    'Replica_SQL_Running' => 'Yes',
 );
 
 // check which replication is available and set $server_{master/slave}_status and assign values
@@ -158,10 +162,13 @@ function PMA_replication_slave_control($action, $control = '', $link = null,$unt
 {
     if(PMA_MYSQL_SERVER_TYPE == 'MariaDB' && PMA_MYSQL_INT_VERSION >= 100501){
         $slvtx='REPLICA';
+        $mstx='MASTER';
     }elseif(PMA_MYSQL_SERVER_TYPE == 'MySQL' && PMA_MYSQL_INT_VERSION >= 80022){
         $slvtx='REPLICA';
+        $mstx='SOURCE';
     }else{
         $slvtx='SLAVE';
+        $mstx='MASTER';
     }
     $action = strtoupper((string)$action);
     $control = strtoupper((string)$control);
@@ -179,7 +186,7 @@ function PMA_replication_slave_control($action, $control = '', $link = null,$unt
         if($until['Until_Condition']=='Relay'){
             $query="START $slvtx SQL_THREAD UNTIL RELAY_LOG_FILE='".PMA_sqlAddSlashes($log_file)."', RELAY_LOG_POS=".$pos.";";
         }else{
-            $query="START $slvtx SQL_THREAD UNTIL MASTER_LOG_FILE='".PMA_sqlAddSlashes($log_file)."', MASTER_LOG_POS=".$pos.";";
+            $query="START $slvtx SQL_THREAD UNTIL {$mstx}_LOG_FILE='".PMA_sqlAddSlashes($log_file)."', {$mstx}_LOG_POS=".$pos.";";
         }
     }else{
         $query=$action . " $slvtx " . $control . ";";
@@ -198,6 +205,13 @@ function PMA_replication_slave_control($action, $control = '', $link = null,$unt
  * @param mixed  $link     mysql link
  *
  * @return output of CHANGE MASTER mysql command
+ * ref https://dev.mysql.com/doc/refman/8.0/en/change-replication-source-to.html
+ *  In MySQL 8.0.23 and later, use CHANGE REPLICATION SOURCE TO in place of the deprecated CHANGE MASTER TO statement. 
+ * ref https://mariadb.com/kb/en/change-master-to/
+    The terms master and slave have historically been used in replication, 
+    and MariaDB has begun the process of adding primary and replica synonyms. 
+    The old terms will continue to be used to maintain backward compatibility
+     - see MDEV-18777 to follow progress on this effort.
  */
 function PMA_replication_slave_change_master($user, $password, $host, $port, $pos, $stop = true, $start = false, $link = null, &$log_sql=null)
 {
@@ -205,19 +219,36 @@ function PMA_replication_slave_change_master($user, $password, $host, $port, $po
         PMA_replication_slave_control("STOP", null, $link);
     }
 
+    if(PMA_MYSQL_SERVER_TYPE == 'MySQL' && PMA_MYSQL_INT_VERSION >= 80023){
+        $tpl_chg='CHANGE REPLICATION SOURCE TO ';
+        $tpl_src="SOURCE_HOST='%s', SOURCE_PORT=%d, SOURCE_USER='%s', SOURCE_PASSWORD='%s' ";
+        $tpl_pos="SOURCE_LOG_FILE='%s', SOURCE_LOG_POS=%d ";
+    }elseif(PMA_MYSQL_SERVER_TYPE == 'MariaDB' && PMA_MYSQL_INT_VERSION >= 900901){
+        $tpl_chg ='CHANGE PRIMARY TO ';
+        $tpl_src="PRIMARY_HOST='%s', PRIMARY_PORT=%d, PRIMARY_USER='%s', PRIMARY_PASSWORD='%s' ";
+        $tpl_pos="PRIMARY_LOG_FILE='%s', PRIMARY_LOG_POS=%d ";
+    }else{
+        $tpl_chg ='CHANGE MASTER TO ';
+        $tpl_src="MASTER_HOST='%s', MASTER_PORT=%d, MASTER_USER='%s', MASTER_PASSWORD='%s' ";
+        $tpl_pos="MASTER_LOG_FILE='%s', MASTER_LOG_POS=%d ";
+    }
+
+
     $sql_s=$sql_g=array();
-    if($host && $user){
-        $tpl="MASTER_HOST='%s', MASTER_PORT=%d, MASTER_USER='%s', MASTER_PASSWORD='%s' ";
-        $sql_s[] = sprintf($tpl, $host, (int)$port, $user, $password);
-        $sql_g[] = sprintf($tpl, $host, (int)$port, $user, '***');
+    if($host){
+        $sql_s[] = sprintf($tpl_src, $host, (int)$port, $user, $password);
+        $sql_g[] = sprintf($tpl_src, $host, (int)$port, $user, '***');
     }
     if(isset($pos["File"]) && isset($pos["Position"])){
-        $tmp = sprintf("MASTER_LOG_FILE='%s', MASTER_LOG_POS=%d ", $pos["File"], (int)$pos["Position"] );
+        $tmp = sprintf($tpl_pos, $pos["File"], (int)$pos["Position"] );
         $sql_s[]=$tmp;
         $sql_g[]=$tmp;
     }
-    $sql    ='CHANGE MASTER TO '.implode(', ',$sql_s);
-    $log_sql='CHANGE MASTER TO '.implode(', ',$sql_g);
+    if(!$sql_s){
+        return null;
+    }
+    $sql    =$tpl_chg.implode(', ',$sql_s);
+    $log_sql=$tpl_chg.implode(', ',$sql_g);
 
     $out = PMA_DBI_try_query($sql, $link);
 
@@ -284,13 +315,22 @@ function PMA_replication_slave_get_master_pos($link = null)
     $output = array();
     $data=PMA_replication_slave_get_status($link);
     if($data){
-        $output["Master_Log_File"]      = $data["Master_Log_File"];
-        $output["Read_Master_Log_Pos"]  = $data["Read_Master_Log_Pos"];
+        $output["Master_Log_File"]      = isset($data["Source_Log_File"]) ? $data["Source_Log_File"] :
+                 (isset($data["Master_Log_File"]) ? $data["Master_Log_File"] : null);
+        $output["Read_Master_Log_Pos"]  = isset($data["Read_Source_Log_Pos"]) ? $data["Read_Source_Log_Pos"] :
+                 (isset($data["Read_Master_Log_Pos"]) ? $data["Read_Master_Log_Pos"] : null);
         $output["Relay_Log_File"]       = $data["Relay_Log_File"];
         $output["Relay_Log_Pos"]        = $data["Relay_Log_Pos"];
-        $output["Relay_Master_Log_File"]= $data["Relay_Master_Log_File"];
-        $output["Master_Log_Pos"]       = $data["Read_Master_Log_Pos"];  // use Relay_Master_Log_File
-        $output["Running"]              = ($data["Slave_IO_Running"]=='Yes'||$data["Slave_SQL_Running"]=='Yes') ? 1 : 0;
+        $output["Relay_Master_Log_File"]= isset($data["Relay_Source_Log_File"]) ? $data["Relay_Source_Log_File"] :
+                 (isset($data["Relay_Master_Log_File"]) ? $data["Relay_Master_Log_File"] : null);
+        $output["Master_Log_Pos"]       = $output["Read_Master_Log_Pos"];  // use Relay_Master_Log_File
+        if( (isset($data["Slave_IO_Running"]) && $data["Slave_IO_Running"]=='Yes')
+            || (isset($data["Slave_SQL_Running"]) && $data["Slave_SQL_Running"]=='Yes') 
+            || (isset($data["Replica_IO_Running"]) && $data["Replica_IO_Running"]=='Yes') 
+            || (isset($data["Replica_SQL_Running"]) && $data["Replica_SQL_Running"]=='Yes') 
+        ){
+            $output["Running"] = 1 ;
+        }
     }
     return $output;
 }
