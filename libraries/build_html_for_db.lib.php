@@ -124,7 +124,7 @@ function PMA_buildHtmlForDb($current, $is_superuser, $checkall, $url_query, $col
         }
     }
     foreach ($replication_types as $type) {
-        if ($replication_info[$type]['status']) {
+        if (isset($replication_info[$type]['status']) && $replication_info[$type]['status']) {
             $out .= '<td class="tool" style="text-align: center;">';
 
             if (strlen(array_search($current["SCHEMA_NAME"], $replication_info[$type]['Ignore_DB'])) > 0) {
