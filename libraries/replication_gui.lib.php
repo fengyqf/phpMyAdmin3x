@@ -162,7 +162,17 @@ function PMA_replication_print_status_table($type, $hidden = false, $title = tru
         } else {
             echo '<span>';
         }
-        echo $svars[$key];
+        // add link for Relay_Log_Pos
+        if($key=='Relay_Log_Pos' && isset($svars['Relay_Log_File'])){
+            $_url_params=array(
+                'bl_type'   =>  'RELAYLOG',
+                'log'       =>  $svars['Relay_Log_File'],
+                'fromPos'   =>  $svars['Relay_Log_Pos'],
+            );
+            echo '<a href="server_binlog.php'.PMA_generate_common_url($_url_params).'">'.$svars[$key].'</a>';
+        }else{
+            echo $svars[$key];
+        }
         echo '</span>';
 
         echo '  </td>';

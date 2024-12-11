@@ -81,8 +81,8 @@ $url_params = array();
 $pos = isset($_REQUEST['pos']) ? (int) $_REQUEST['pos'] : 0;
 $fromPos = isset($_REQUEST['fromPos']) ? (int) $_REQUEST['fromPos'] : 0;
 
-if (! $fx_curr_log || ! array_key_exists($fx_curr_log, $binary_logs)) {
-    $_REQUEST['log'] = '';
+if ($bl_type=='BINLOG' && !array_key_exists($fx_curr_log, $binary_logs)) {
+    $fx_curr_log = '';  // clean log if not exists, only for BINLOG
 } else {
     $url_params['log'] = $fx_curr_log;
 }
@@ -141,12 +141,14 @@ if($bl_type=='RELAYLOG'){
     echo PMA_generate_common_hidden_inputs($url_params);
     echo '<fieldset><legend>input RelayLog filename to show</legend>';
     echo '<input type="text" name="log" value="'.$fx_curr_log.'" style="width: 260px" >';
-    echo '<input type="text" name="fromPos" id="fromPos" value="'.$fromPos.'" style="width: 60px" title="'.__('Position').'" />';
+    echo '<input type="text" name="fromPos" id="fromPos" value="'.$fromPos.'" style="width: 100px;" title="'.__('Position').'" />';
     echo '<input type="submit" value="' . __('Go') . '" />';
     echo '&nbsp;<span>';
     $this_url_params = $url_params;
     $this_url_params['bl_type']='';
-    echo ' &nbsp; | &nbsp;<span><a href="./server_binlog.php' . PMA_generate_common_url($this_url_params) . '">Binlog</a>';
+    echo ' &nbsp; | &nbsp;<a href="./server_binlog.php' . PMA_generate_common_url($this_url_params) . '">Binlog</a>';
+    $this_url_params['bl_type']='RELAYLOG';
+    echo ' &nbsp;<a href="./server_binlog.php' . PMA_generate_common_url($this_url_params) . '">RelayLog</a>';
     echo '</span>';
     echo '</fieldset>';
     echo '</form>';
@@ -188,7 +190,7 @@ if($bl_type=='RELAYLOG'){
         $fx_next_log='';
     }
     echo '</select> ';
-    echo '<input type="text" name="fromPos" id="fromPos" value="'.$fromPos.'" style="width: 60px" title="'.__('Position').'" />';
+    echo '<input type="text" name="fromPos" id="fromPos" value="'.$fromPos.'" style="width: 100px;" title="'.__('Position').'" />';
     echo '<input type="submit" value="' . __('Go') . '" />';
     echo '&nbsp;<span>';
     echo count($binary_logs) . ' ' . __('Files') . ', ';
