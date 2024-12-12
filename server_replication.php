@@ -220,6 +220,38 @@ if($sql_query){
 }
 unset($refresh);
 
+// only display slave status
+if(isset($GLOBALS['mslvst'])){
+    $fx_reload_itv=(int)$GLOBALS['mslvst'];
+    $fx_display_title=(bool)(!$fx_reload_itv);
+    if($fx_reload_itv > 0){
+        $_url_params = $GLOBALS['url_params'];
+        $_url_params['mslvst'] = $fx_reload_itv;
+        $_url_params['rndrld'] = time().'.'.rand();
+        $fx_reload_url=PMA_generate_common_url($_url_params,'&');
+    ?>  <script>
+        $(document).ready(function(){
+            var url="<?php echo $fx_reload_url; ?>";
+            $("#serverslavereplicationsummary th:last").append(" <span class=notice><a id=slvrllk>Reload</a> in <span id=slvrlcd>999</span>s</span>");
+            $("#slvrlcd").text(<?php echo $fx_reload_itv; ?>);
+            $("#slvrllk").attr("href","<?php echo $fx_reload_url; ?>");
+            var itvl=setInterval(function(){
+                var countdown=parseInt($("#slvrlcd").text());
+                if(countdown <= 0){
+                    clearInterval(itvl);
+                    window.location = "<?php echo $fx_reload_url; ?>";
+                }else{
+                    countdown=countdown-1;
+                    $("#slvrlcd").text(''+(countdown));
+                }
+            }, 1000);
+        });
+    </script><?php
+    }
+    PMA_replication_print_status_table('slave',false,$fx_display_title);
+    require './libraries/footer.inc.php';
+}
+
 echo '<div id="replication">';
 echo ' <h2>';
 echo '   ' . PMA_getImage('s_replication.png');
@@ -393,8 +425,18 @@ if (! isset($GLOBALS['repl_clear_scr'])) {
             echo PMA_getImage('s_success.png','SQL Thread is Running');
         }
         echo '</li>';
-        echo ' <li><a href="#" id="slave_status_href">' . __('See slave status table') . '...</a></li>';
+        echo ' <li><a href="#" id="slave_status_href">' . __('See slave status table') . '...</a>';
+        echo '&nbsp;&nbsp;&nbsp; <span id="mslvst" style="display:none;">[ Reload ';
+        $_url_params = $GLOBALS['url_params'];
+        $fs_itvs=array('once',1,3,5,10,15,30,60,120,300);
+        foreach($fs_itvs as $key){
+            $_url_params['mslvst'] = $key;
+            $fx_mslvst_link = PMA_generate_common_url($_url_params);
+            echo '<a href="'.$fx_mslvst_link.'">&nbsp;'.$key.( $key>0 ? 's' : '' ) .'&nbsp;</a>&nbsp;&nbsp;';
+        }
+        echo ']</span></li>';
         echo PMA_replication_print_status_table('slave', true, false);
+        echo '<script>$(document).ready(function(){$("#slave_status_href").click(function(){$("#mslvst").toggle();})});</script>';
         if (isset($_SESSION['replication']['m_correct']) && $_SESSION['replication']['m_correct'] == true) {
             echo ' <li><a href="#" id="slave_synchronization_href">' . __('Synchronize databases with master') . '</a></li>';
             echo ' <div id="slave_synchronization_gui" style="display: none;">';
