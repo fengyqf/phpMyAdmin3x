@@ -46,6 +46,7 @@ function PMA_jsFormat($a_string = '', $add_backquotes = true)
  */
 function PMA_escapeJsString($string)
 {
+    if(is_null($string)){ $string=''; }
     return preg_replace('@</script@i', '</\' + \'script',
                         strtr($string, array(
                                 "\000" => '',

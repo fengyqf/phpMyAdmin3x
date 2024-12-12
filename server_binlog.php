@@ -306,7 +306,7 @@ if ($num_rows >= $GLOBALS['cfg']['MaxRows']) {
     <th><?php echo __('Position'); ?></th>
     <th><?php echo __('Event type'); ?></th>
     <th><?php echo __('Server ID'); ?></th>
-    <th><?php echo __('Original position'); ?></th>
+    <th><?php echo __('End Pos'); ?></th>
     <th><?php echo __('Information'); ?></th>
 </tr>
 </thead>
@@ -323,7 +323,7 @@ while ($value = PMA_DBI_fetch_assoc($result)) {
     <td align="right">&nbsp;<?php echo $value['Pos']; ?>&nbsp;</td>
     <td>&nbsp;<?php echo $value['Event_type']; ?>&nbsp;</td>
     <td align="right">&nbsp;<?php echo $value['Server_id']; ?>&nbsp;</td>
-    <td align="right">&nbsp;<?php echo isset($value['Orig_log_pos']) ? $value['Orig_log_pos'] : $value['End_log_pos']; ?>&nbsp;</td>
+    <td align="right">&nbsp;<?php echo $value['End_log_pos']; ?>&nbsp;</td>
     <td>&nbsp;<?php echo htmlspecialchars($value['Info']); ?>&nbsp;</td>
 </tr>
     <?php
