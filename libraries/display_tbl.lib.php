@@ -1865,7 +1865,7 @@ function PMA_displayTableBody(&$dt_result, &$is_display, $map, $analyzed_sql)
 
     // this is needed by PMA_displayTable() to generate the proper param
     // in the multi-edit and multi-delete form
-    return $clause_is_unique;
+    return (isset($clause_is_unique) ? $clause_is_unique : null);
 } // end of the 'PMA_displayTableBody()' function
 
 
@@ -2339,18 +2339,18 @@ function PMA_displayTable(&$dt_result, &$the_disp_mode, $analyzed_sql)
             if (stristr($meta->type, 'BLOB') || $meta->type == 'geometry') {
                 $column_for_first_row = PMA_handle_non_printable_contents($meta->type, $row[$sorted_column_index], $transform_function, $transform_options, $default_function, $meta, null);
             } else {
-                $column_for_first_row = $row[$sorted_column_index];
+                $column_for_first_row = isset($row[$sorted_column_index]) ? $row[$sorted_column_index] : null;
             }
             $column_for_first_row = strtoupper(substr((string)$column_for_first_row, 0, $GLOBALS['cfg']['LimitChars']));
             // fetch last row of the result set
-            PMA_DBI_data_seek($dt_result, $num_rows - 1);
+            PMA_DBI_data_seek($dt_result, ( ($num_rows>=1) ? $num_rows - 1 : 0));
             $row = PMA_DBI_fetch_row($dt_result);
             // check for non printable sorted row data
             $meta = $fields_meta[$sorted_column_index];
             if (stristr($meta->type, 'BLOB') || $meta->type == 'geometry') {
                 $column_for_last_row = PMA_handle_non_printable_contents($meta->type, $row[$sorted_column_index], $transform_function, $transform_options, $default_function, $meta, null);
             } else {
-                $column_for_last_row = $row[$sorted_column_index];
+                $column_for_last_row = isset($row[$sorted_column_index]) ? $row[$sorted_column_index] : null;
             }
             $column_for_last_row = strtoupper(substr((string)$column_for_last_row, 0, $GLOBALS['cfg']['LimitChars']));
             // reset to first row for the loop in PMA_displayTableBody()
