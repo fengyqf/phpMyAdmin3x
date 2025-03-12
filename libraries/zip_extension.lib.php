@@ -6,6 +6,23 @@
  * @package    phpMyAdmin
  */
 
+// zip_... functions deprecated since php8.0, ZipArchive class / PHP_VERSION_ID defined in PHP 5.2.7+
+if (defined('PHP_VERSION_ID') && PHP_VERSION_ID >= 80000 ) {
+    $fx_zip_use_classapi=true;
+}else{
+    $fx_zip_use_classapi=false;
+}
+
+if($fx_zip_use_classapi){
+    // -- class style api
+    include_once './libraries/zip_extension_classapi.lib.php';
+
+}else{
+// -- until the end of file, original zip_extension.lib.php, keep indentation spaces
+
+
+
+
 /**
  * Gets zip file contents
  *
@@ -174,4 +191,11 @@ function PMA_getZipError($code)
     }
     return $message;
 }
+
+
+
+
+//-- 
+}
+
 ?>

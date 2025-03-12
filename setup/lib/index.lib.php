@@ -531,7 +531,7 @@ function perform_config_checks()
     // $cfg['ZipDump']
     // requires zip_open in import
     //
-    if ($cf->getValue('ZipDump') && !@function_exists('zip_open')) {
+    if ($cf->getValue('ZipDump') && !extension_loaded('zip')) {
         messages_set(
             'error',
             'ZipDump_import',
