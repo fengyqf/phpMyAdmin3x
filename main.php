@@ -136,11 +136,11 @@ if(PMA_isSuperuser() && isset($GLOBALS['cfg']['Server']['debug']) && $GLOBALS['c
 
 // clean cached for  libraries/common.lib.php//PMA_cache...()
 if(isset($_GET['clear_pma_cache'])){
-    if($_GET['clear_pma_cache']==999 ? : false){
-        PMA_cacheDestroy($clear_errors=true);
+    if($_GET['clear_pma_cache']==999){
+        PMA_cacheDestroy(true);
         echo '<div class="success">All cache and errors cleaned for all MySQL server.</div>';
     }else{
-        PMA_cacheDestroy($clear_errors=false);
+        PMA_cacheDestroy(false);
         echo '<div class="success">All cache cleaned for all MySQL server.</div>';
     }
 }

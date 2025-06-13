@@ -2446,10 +2446,10 @@ function PMA_displayTable(&$dt_result, &$the_disp_mode, $analyzed_sql)
     }
 
     // drop list for ordering, moved here as a function
-    $fsfx_buff=PMA_fsfx_displayTableHeaders_sorting($is_display, $fields_cnt = $fields_cnt, $analyzed_sql = $analyzed_sql, $sort_expression=$sort_expression);
+    $fsfx_buff=PMA_fsfx_displayTableHeaders_sorting($is_display, $fields_cnt, $analyzed_sql, $sort_expression);
 
     if ($is_display['nav_bar'] == '1' && empty($analyzed_sql[0]['limit_clause'])) {
-        PMA_displayTableNavigation($pos_next, $pos_prev, $sql_query, 'top_direction_dropdown',$fsfx_buff=$fsfx_buff);
+        PMA_displayTableNavigation($pos_next, $pos_prev, $sql_query, 'top_direction_dropdown',$fsfx_buff);
         echo "\n";
     } elseif (! isset($GLOBALS['printview']) || $GLOBALS['printview'] != '1') {
         echo "\n" . '<br /><br />' . "\n";
