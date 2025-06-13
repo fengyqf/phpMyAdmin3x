@@ -131,7 +131,7 @@ function PMA_DBI_try_query($query, $link = null, $options = 0, $cache_affected_r
     $r = PMA_DBI_real_query($query, $link, $options);
 
     if ($cache_affected_rows) {
-        $GLOBALS['cached_affected_rows'] = PMA_DBI_affected_rows($link, $get_from_cache = false);
+        $GLOBALS['cached_affected_rows'] = PMA_DBI_affected_rows($link, false);
     }
 
     if ($GLOBALS['cfg']['DBG']['sql']) {
@@ -189,7 +189,7 @@ function PMA_DBI_simple_query($query, $link = null, $options = 0, $cache_affecte
     }
     $r = PMA_DBI_real_query($query, $link, $options);
     if ($cache_affected_rows) {
-        $GLOBALS['cached_affected_rows'] = PMA_DBI_affected_rows($link, $get_from_cache = false);
+        $GLOBALS['cached_affected_rows'] = PMA_DBI_affected_rows($link, false);
     }
     return $r;
 }
