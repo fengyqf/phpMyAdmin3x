@@ -388,15 +388,36 @@ $last_messages = array();
 $warning_messages = array();
 $error_messages = array();
 
+// execute as transaction
+$fsfx_transaction=false;
+if(isset($_REQUEST['fsfx_transaction']) && $_REQUEST['fsfx_transaction'] == 'transaction'){
+    $fsfx_transaction=true;
+}
+$fsfx_transaction=true;   // DEBUG ENABLE.....
+$fsfx_query_count=count($query);
+$fsfx_query_pos=0;
+
 foreach ($query as $single_query) {
+    // fsfx: start transaction in first query, ...
+    if($fsfx_query_pos==0 && $fsfx_transaction){
+        PMA_DBI_query('SET AUTOCOMMIT=0');
+        PMA_DBI_query('START TRANSACTION');
+    }
+    $fsfx_query_pos+=1;
     if ($_REQUEST['submit_type'] == 'showinsert') {
         $last_messages[] = PMA_Message::notice(__('Showing SQL query'));
         continue;
     }
-    if ($GLOBALS['cfg']['IgnoreMultiSubmitErrors']) {
+    if($fsfx_transaction){
+        PMA_DBI_simple_query($single_query);
+    } elseif ($GLOBALS['cfg']['IgnoreMultiSubmitErrors']) {
         $result = PMA_DBI_try_query($single_query);
     } else {
         $result = PMA_DBI_query($single_query);
+    }
+    // ... and commit in last query
+    if($fsfx_query_pos >= $fsfx_query_count){
+        PMA_DBI_query('COMMIT');
     }
 
     if (! $result) {

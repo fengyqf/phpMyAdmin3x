@@ -1014,6 +1014,9 @@ foreach ($rows as $row_id => $vrow) {
     <br />
     <fieldset id="actions_panel">
     <table border="0" cellpadding="5" cellspacing="0">
+    <tr><td valign="middle" nowrap="nowrap">
+        <label><input type="checkbox" name="fsfx_transaction" value="fsfx_transaction">Commit in a single Transaction.</label>
+    </td></tr>
     <tr>
         <td valign="middle" nowrap="nowrap">
             <select name="submit_type" class="control_at_footer" tabindex="<?php echo ($tabindex + $tabindex_for_value + 1); ?>">
