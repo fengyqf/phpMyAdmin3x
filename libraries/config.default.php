@@ -2213,6 +2213,8 @@ $cfg['AvailableCharsets'] = array(
     'koi8-r',
     'big5',
     'gb2312',
+    'gbk',
+    'gb18030',
     'utf-16',
     'utf-8',
     'utf-7',
