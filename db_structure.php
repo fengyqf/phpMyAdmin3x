@@ -111,8 +111,8 @@ echo PMA_generate_common_hidden_inputs($db);
 PMA_TableHeader($db_is_information_schema, $server_slave_status);
 
 $i = $sum_entries = 0;
-$sum_size       = (double) 0;
-$overhead_size  = (double) 0;
+$sum_size       = (float) 0;
+$overhead_size  = (float) 0;
 $overhead_check = '';
 $checked        = !empty($checkall) ? ' checked="checked"' : '';
 $num_columns    = $cfg['PropertiesNumColumns'] > 1

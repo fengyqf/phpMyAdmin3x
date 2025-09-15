@@ -248,8 +248,8 @@ if (isset($_REQUEST['do_save_data'])) {
             unset($tbl_stats_result);
 
             if ($is_show_stats) {
-                $sum_size       = (double) 0;
-                $overhead_size  = (double) 0;
+                $sum_size       = (float) 0;
+                $overhead_size  = (float) 0;
                 $overhead_check = '';
 
                 $tblsize                    =  doubleval($tbl_stats['Data_length']) + doubleval($tbl_stats['Index_length']);

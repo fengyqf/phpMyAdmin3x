@@ -15,7 +15,7 @@
   }
 
   function packDouble($value, $mode = 'LE') {
-    $value = (double)$value;
+    $value = (float)$value;
     $bin = pack("d", $value);
 
     //We test if the conversion of an integer (1) is done as LE or BE by default
