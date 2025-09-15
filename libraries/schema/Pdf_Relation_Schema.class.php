@@ -443,8 +443,8 @@ class Table_Stats
             );
         }
         list($this->x, $this->y) = PMA_DBI_fetch_row($result);
-        $this->x = (double) $this->x;
-        $this->y = (double) $this->y;
+        $this->x = (float) $this->x;
+        $this->y = (float) $this->y;
         /*
          * displayfield
          */

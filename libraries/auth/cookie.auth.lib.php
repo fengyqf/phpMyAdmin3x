@@ -39,7 +39,7 @@ if (PHP_VERSION_ID < 70100 && function_exists('mcrypt_encrypt')) {
      * per server so I don't put the server number in the cookie name.
      */
     if (empty($_COOKIE['pma_mcrypt_iv']) || false === ($iv = base64_decode($_COOKIE['pma_mcrypt_iv'], true))) {
-        srand((double) microtime() * 1000000);
+        srand((float) microtime() * 1000000);
         $td = mcrypt_module_open(MCRYPT_BLOWFISH, '', MCRYPT_MODE_CBC, '');
         if ($td === false) {
             die(__('Failed to use Blowfish from mcrypt!'));
@@ -95,7 +95,7 @@ if (PHP_VERSION_ID < 70100 && function_exists('mcrypt_encrypt')) {
     function PMA_blowfish_createIV()
     {
         if (function_exists('mcrypt_create_iv')) {
-            srand((double) microtime() * 1000000);
+            srand((float) microtime() * 1000000);
             $td = mcrypt_module_open(MCRYPT_BLOWFISH, '', MCRYPT_MODE_CBC, '');
             if ($td === false) {
                 PMA_fatalError(__('Failed to use Blowfish from mcrypt!'));
