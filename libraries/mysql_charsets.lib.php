@@ -36,7 +36,9 @@ if (! PMA_cacheExists('mysql_charsets', true)) {
         : 'SELECT * FROM information_schema.COLLATIONS';
     $res = PMA_DBI_query($sql);
     while ($row = PMA_DBI_fetch_assoc($res)) {
-        if (isset($row['CHARACTER_SET_NAME']) && ! is_array($mysql_collations[$row['CHARACTER_SET_NAME']])) {
+        if(is_null($row['CHARACTER_SET_NAME'])) {  $row['CHARACTER_SET_NAME']='';   }
+        if(is_null($row['COLLATION_NAME']))     {  $row['COLLATION_NAME']='';       }
+        if (isset($mysql_collations[$row['CHARACTER_SET_NAME']]) && ! is_array($mysql_collations[$row['CHARACTER_SET_NAME']])) {
             $mysql_collations[$row['CHARACTER_SET_NAME']] = array($row['COLLATION_NAME']);
         } else {
             $mysql_collations[$row['CHARACTER_SET_NAME']][] = $row['COLLATION_NAME'];

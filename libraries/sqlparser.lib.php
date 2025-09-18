@@ -2467,7 +2467,7 @@ if (! defined('PMA_MINIMUM_COMMON')) {
                 case 'CREATE':
                 case 'ALTER':
                 case 'DROP':
-                case 'RENAME';
+                case 'RENAME':
                 case 'TRUNCATE':
                 case 'ANALYZE':
                 case 'ANALYSE':
