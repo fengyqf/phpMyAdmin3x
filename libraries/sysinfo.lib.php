@@ -60,6 +60,10 @@ function PMA_getSysInfo()
     */
 }
 
+// PHP_VERSION_ID defined in PHP 5.2.7+
+if (!defined('PHP_VERSION_ID')) {
+    define('PHP_VERSION_ID', 0 );
+}
 
 class PMA_sysinfoWinnt
 {
@@ -69,7 +73,14 @@ class PMA_sysinfoWinnt
 
     public function __construct() {
         // initialize the wmi object
-        $objLocator = new COM('WbemScripting.SWbemLocator');
+        if(!class_exists('COM') && !class_exists('com')){
+            die("COM and .Net Not Found.");
+        }
+        if (PHP_VERSION_ID < 80000 ) {
+            $objLocator = new COM('WbemScripting.SWbemLocator');
+        }else{
+            $objLocator = new com('WbemScripting.SWbemLocator');
+        }
         $this->_wmi = $objLocator->ConnectServer();
     }
 
