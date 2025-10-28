@@ -908,6 +908,11 @@ echo __('Runtime Information');
         </div>
 
         <div id="statustabs_advisor" class="jsfeature">
+<?php
+    if(PHP_OS=='WINNT' && !class_exists('COM') && !class_exists('com')){
+        echo('<div class="notice">COM and .Net extension Not Found, This page will not work correctly. Add <i>extension=php_com_dotnet.dll</i> in php.ini</div>');
+    }
+?>
             <div class="tabLinks">
                 <?php echo PMA_getImage('play.png'); ?> <a href="#startAnalyzer"><?php echo __('Run analyzer'); ?></a>
                 <?php echo PMA_getImage('b_help.png'); ?> <a href="#openAdvisorInstructions"><?php echo __('Instructions'); ?></a>
@@ -1561,6 +1566,10 @@ function printVariablesTable()
 function printMonitor()
 {
     global $server_status, $server_db_isLocal;
+
+    if(PHP_OS=='WINNT' && !class_exists('COM') && !class_exists('com')){
+        echo('<div class="notice">COM and .Net extension Not Found, This page will not work correctly. Add <i>extension=php_com_dotnet.dll</i> in php.ini</div>');
+    }
 ?>
     <div class="tabLinks" style="display:none;">
         <a href="#pauseCharts">

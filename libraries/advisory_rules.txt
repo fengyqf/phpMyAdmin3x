@@ -357,7 +357,7 @@ rule 'Is InnoDB disabled?' [!PMA_DRIZZLE && PMA_MYSQL_INT_VERSION < 50600]
 	InnoDB is usually the better choice for table engines.
 	have_innodb is set to 'value'
 
-rule 'InnoDB log size' [innodb_buffer_pool_size > 0]
+rule 'InnoDB log size' [PMA_MYSQL_INT_VERSION < 80030 && innodb_buffer_pool_size > 0]
 	(innodb_log_file_size * innodb_log_files_in_group)/ innodb_buffer_pool_size * 100
 	value < 20 && innodb_log_file_size / (1024 * 1024) < 256
 	The InnoDB log file size is not an appropriate size, in relation to the InnoDB buffer pool.
