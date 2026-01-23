@@ -445,6 +445,9 @@ if (isset($_REQUEST['flush'])) {
         'TABLES',
         'QUERY CACHE',
     );
+    if(PMA_MYSQL_SERVER_TYPE == 'MySQL' && PMA_MYSQL_INT_VERSION >= 80017){
+        $_flush_commands = array('STATUS','TABLES',);
+    }
 
     if (in_array($_REQUEST['flush'], $_flush_commands)) {
         PMA_DBI_query('FLUSH ' . $_REQUEST['flush'] . ';');
@@ -1521,9 +1524,9 @@ function printVariablesTable()
                 echo htmlspecialchars(PMA_formatNumber($value, 0, 2)) . ' %';
             } elseif (strpos($name, 'Uptime') !== false) {
                 echo htmlspecialchars(PMA_timespanFormat($value));
-            } elseif (is_numeric($value) && $value == (int) $value && $value > 1000) {
+            } elseif (is_numeric($value) && $value == (float) $value && $value > 1000) {
                 echo htmlspecialchars(PMA_formatNumber($value, 3, 1));
-            } elseif (is_numeric($value) && $value == (int) $value) {
+            } elseif (is_numeric($value) && $value == (float) $value) {
                 echo htmlspecialchars(PMA_formatNumber($value, 3, 0));
             } elseif (is_numeric($value)) {
                 echo htmlspecialchars(PMA_formatNumber($value, 3, 1));

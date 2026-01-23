@@ -644,7 +644,7 @@ if (! $tbl_is_view && ! $db_is_information_schema) {
 
     if (!PMA_DRIZZLE) {
         ?>
-<a href="sql.php?<?php echo $url_query; ?>&amp;session_max_rows=all&amp;sql_query=<?php echo urlencode('SELECT * FROM ' . PMA_backquote($table) . ' PROCEDURE ANALYSE()'); ?>"><?php
+<a href="sql.php?<?php echo $url_query; ?>&amp;session_max_rows=all&amp;sql_query=<?php echo urlencode('SELECT * FROM ' . PMA_backquote($table) . ' PROCEDURE ANALYSE()'); ?>"<?php if(PMA_MYSQL_SERVER_TYPE == 'MySQL' && PMA_MYSQL_INT_VERSION >= 80003) { ?>title="Not Supported"<?php } ?> ><?php
         echo PMA_getIcon('b_tblanalyse.png', __('Propose table structure'), true);
         ?></a><?php
         echo PMA_showMySQLDocu('Extending_MySQL', 'procedure_analyse') . "\n";
