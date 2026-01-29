@@ -261,6 +261,11 @@ if ($GLOBALS['cfg']['ShowServerInfo'] || $GLOBALS['cfg']['ShowPhpInfo']) {
 
     if ($cfg['ShowPhpInfo']) {
         PMA_printListItem('PHP '.PHP_VERSION.' - '.__('Show PHP information'), 'li_phpinfo', './phpinfo.php?' . $common_url_query);
+        if(!isset($_GET['checkphpext'])){
+            PMA_printListItem('Check required PHP extensions', '', './main.php?checkphpext=y&' . $common_url_query);
+        }else{
+            fsfx_check_php_extensions();
+        }
     }
     echo '  </ul>';
     echo ' </div>';
@@ -506,6 +511,43 @@ function fsfx_get_server_charset()
         $serverCharset = PMA_DBI_fetch_value('SELECT @@character_set_server;', 0, 0);
     }
     return $serverCharset;
+}
+
+
+function fsfx_check_php_extensions()
+{
+    /*
+     * key   : extension name, used by extension_loaded()/phpversion()
+     * value : name to display
+     */
+    $extensions = array(
+        'mysqli'    => 'mysqli',
+        'pdo'       => 'PDO',
+        'pdo_mysql' => 'PDO_MYSQL',
+        'mysqlnd'   => 'mysqlnd',
+        'mbstring'  => 'mbstring',
+        'openssl'   => 'openssl',
+        'json'      => 'json',
+        'zip'       => 'zip',
+        'zlib'      => 'zlib',
+        'ctype'     => 'ctype',
+        'filter'    => 'filter',
+        'session'   => 'session',
+        'iconv'     => 'iconv',
+        'gd'        => 'gd',
+        'xml'       => 'xml',
+        'gettext'   => 'gettext'
+    );
+
+    foreach ($extensions as $ext => $label) {
+        echo "<li><b>" . htmlspecialchars($label, ENT_QUOTES) . "</b>: ";
+        if (!extension_loaded($ext)) {
+            echo '<img src="themes/dot.gif" title="" alt="" class="icon ic_s_error2" />';
+        } else {
+            echo '<img src="themes/dot.gif" title="" alt="" class="icon ic_s_success" />';
+        }
+        echo "</li>\n";
+    }
 }
 
 
