@@ -24,7 +24,7 @@ require_once './libraries/server_links.inc.php';
 
 
 // -----------------------------------------------------------------------------
-$fx_curr_log=(isset($_REQUEST['log'])) ? trim($_REQUEST['log']) : null;
+$fx_curr_log=(isset($_REQUEST['log'])) ? trim($_REQUEST['log']) : '';
 $fxop_binlog=isset($_REQUEST['fxop_binlog']) ? $_REQUEST['fxop_binlog'] : '';
 
 if(isset($_REQUEST['bl_type']) && $_REQUEST['bl_type']=='RELAYLOG'){
