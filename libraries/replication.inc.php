@@ -18,6 +18,8 @@ $server_master_replication = PMA_fx_show_master_status();
  */
 $server_slave_replication = PMA_fx_show_slave_status();
 
+$replica_channels=fsfx_get_replica_channels($server_slave_replication);
+
 /**
  * replication types
  */
@@ -155,20 +157,35 @@ function PMA_extract_db_or_table($string, $what = 'db')
  * @param string $action  possible values: START or STOP
  * @param string $control default: null, possible values: SQL_THREAD or IO_THREAD or null. If it is set to null, it controls both SQL_THREAD and IO_THREAD
  * @param mixed  $link    mysql link
+ * @param array $untile   mixed args,such as position, channel, etc
  *
  * @return mixed output of PMA_DBI_try_query
  */
 function PMA_replication_slave_control($action, $control = '', $link = null,$until=null,&$log_sql=null)
 {
+    if(isset($until["repl_channel"]) && $until["repl_channel"]){
+        $p_cnn=" '".PMA_sqlAddSlashes($until["repl_channel"])."'";
+    }elseif(isset($until["default_channel"]) && $until["default_channel"]){
+        $p_cnn=" ''";
+    }else{
+        $p_cnn="";
+    }
+
     if(PMA_MYSQL_SERVER_TYPE == 'MariaDB' && PMA_MYSQL_INT_VERSION >= 100501){
         $slvtx='REPLICA';
         $mstx='MASTER';
+        $chnl_a=$p_cnn ? " '{$p_cnn}'" : '';;
+        $chnl_x="";
     }elseif(PMA_MYSQL_SERVER_TYPE == 'MySQL' && PMA_MYSQL_INT_VERSION >= 80022){
         $slvtx='REPLICA';
         $mstx='SOURCE';
+        $chnl_a="";
+        $chnl_x=$p_cnn ? " FOR CHANNEL{$p_cnn}" : '';
     }else{
         $slvtx='SLAVE';
         $mstx='MASTER';
+        $chnl_a="";
+        $chnl_x="";
     }
     $action = strtoupper((string)$action);
     $control = strtoupper((string)$control);
@@ -184,12 +201,12 @@ function PMA_replication_slave_control($action, $control = '', $link = null,$unt
         $log_file=$until['Until_Log_File'] ;
         $pos=isset($until['RELAY_LOG_POS']) ? (int)($until['RELAY_LOG_POS']) : 0 ;
         if($until['Until_Condition']=='Relay'){
-            $query="START $slvtx SQL_THREAD UNTIL RELAY_LOG_FILE='".PMA_sqlAddSlashes($log_file)."', RELAY_LOG_POS=".$pos.";";
+            $query="START {$slvtx}{$chnl_a} SQL_THREAD UNTIL RELAY_LOG_FILE='".PMA_sqlAddSlashes($log_file)."', RELAY_LOG_POS=".$pos."{$chnl_x};";
         }else{
-            $query="START $slvtx SQL_THREAD UNTIL {$mstx}_LOG_FILE='".PMA_sqlAddSlashes($log_file)."', {$mstx}_LOG_POS=".$pos.";";
+            $query="START {$slvtx}{$chnl_a} SQL_THREAD UNTIL {$mstx}_LOG_FILE='".PMA_sqlAddSlashes($log_file)."', {$mstx}_LOG_POS=".$pos."{$chnl_x};";
         }
     }else{
-        $query=$action . " $slvtx " . $control . ";";
+        $query=$action . " {$slvtx}{$chnl_a} " . $control . "{$chnl_x};";
     }
     $log_sql .= $query."\r\n";
     return PMA_DBI_try_query($query, $link);
@@ -218,39 +235,88 @@ function PMA_replication_slave_change_master($user, $password, $host, $port, $po
     if ($stop) {
         PMA_replication_slave_control("STOP", null, $link);
     }
+    if(isset($pos["repl_channel"]) && $pos["repl_channel"]){
+        $p_cnn=" '".PMA_sqlAddSlashes($pos["repl_channel"])."'";
+    }elseif(isset($pos["default_channel"]) && $pos["default_channel"]){
+        $p_cnn=" ''";
+    }else{
+        $p_cnn="";
+    }
+
+    //pack variables to $pos, for loop-processing
+    if(!isset($pos['Host']) && $host){          $pos['Host']=$host; }
+    if(!isset($pos['User']) && $user){          $pos['User']=$user; }
+    if(!isset($pos['Password']) && $password){  $pos['Password']=$password; }
+    if(!isset($pos['Port']) && $port){          $pos['Port']=$port; }
+
+    // CHANGE MASTER ...     option => keys in $pos
+    $opts_tpl=array(
+                'MASTER_HOST'       =>  'Host',
+                'MASTER_USER'       =>  'User',
+                'MASTER_PASSWORD'   =>  'Password',
+                'MASTER_PORT'       =>  'Port/r',
+                'MASTER_LOG_FILE'   =>  'File',
+                'MASTER_LOG_POS'    =>  'Position/r',
+                'MASTER_SSL'        =>  'SSL/r',
+                'MASTER_SSL_CA'     =>  'SSL_ca',
+                'MASTER_SSL_CERT'   =>  'SSL_cert',
+                'MASTER_SSL_KEY'    =>  'SSL_key',
+            );
 
     if(PMA_MYSQL_SERVER_TYPE == 'MySQL' && PMA_MYSQL_INT_VERSION >= 80023){
         $tpl_chg='CHANGE REPLICATION SOURCE TO ';
-        $tpl_src="SOURCE_HOST='%s', SOURCE_PORT=%d, SOURCE_USER='%s', SOURCE_PASSWORD='%s' ";
-        $tpl_pos="SOURCE_LOG_FILE='%s', SOURCE_LOG_POS=%d ";
-    }elseif(PMA_MYSQL_SERVER_TYPE == 'MariaDB' && PMA_MYSQL_INT_VERSION >= 900901){
-        $tpl_chg ='CHANGE PRIMARY TO ';
-        $tpl_src="PRIMARY_HOST='%s', PRIMARY_PORT=%d, PRIMARY_USER='%s', PRIMARY_PASSWORD='%s' ";
-        $tpl_pos="PRIMARY_LOG_FILE='%s', PRIMARY_LOG_POS=%d ";
+        $tpl_cnl=$p_cnn ? " FOR CHANNEL{$p_cnn}" : '';
+        $opts=array();
+        foreach($opts_tpl as $key=>$value){
+            $k=(substr($key,0,7)=='MASTER_') ? ('SOURCE_'.substr($key,7)) : $key;
+            $opts[$k]=$value;
+        }
+        $opts['SOURCE_AUTO_POSITION']   =  'Auto_Position/r';
+
+    }elseif(PMA_MYSQL_SERVER_TYPE == 'MariaDB' && PMA_MYSQL_INT_VERSION >= 900901){ // for long long later
+        $tpl_chg="CHANGE PRIMARY{$p_cnn} TO ";
+        $tpl_cnl="";
+        $opts=array();
+        foreach($opts_tpl as $key=>$value){
+            $k=(substr($key,0,7)=='MASTER_') ? ('PRIMARY_'.substr($key,7)) : $key;
+            $opts[$k]=$value;
+        }
+        $opts['SOURCE_USE_GTID']   =  'Use_Gtid/r`';
     }else{
-        $tpl_chg ='CHANGE MASTER TO ';
-        $tpl_src="MASTER_HOST='%s', MASTER_PORT=%d, MASTER_USER='%s', MASTER_PASSWORD='%s' ";
-        $tpl_pos="MASTER_LOG_FILE='%s', MASTER_LOG_POS=%d ";
+        $tpl_chg="CHANGE MASTER{$p_cnn} TO ";
+        $tpl_cnl="";
+        $opts=array();
+        $opts=$opts_tpl;
+        $opts['SOURCE_USE_GTID']   =  'Use_Gtid/r';
     }
 
+    $sql_p=array();
+    foreach($opts as $k=>$v){
+        $sp=explode('/',$v);
+        if(count($sp)>=2){
+            $p=$sp[0];
+            $m=$sp[1];
+        }else{
+            $p=$v;
+            $m='';
+        }
+        if(!isset($pos[$p])){
+            continue;
+        }
+        $qt=($m=='r') ? '' : "'";
+        $sql_p[]="$k={$qt}{$pos[$p]}{$qt}";
+    }
 
-    $sql_s=$sql_g=array();
-    if($host){
-        $sql_s[] = sprintf($tpl_src, $host, (int)$port, $user, $password);
-        $sql_g[] = sprintf($tpl_src, $host, (int)$port, $user, '***');
-    }
-    if(isset($pos["File"]) && isset($pos["Position"])){
-        $tmp = sprintf($tpl_pos, $pos["File"], (int)$pos["Position"] );
-        $sql_s[]=$tmp;
-        $sql_g[]=$tmp;
-    }
-    if(!$sql_s){
-        return null;
-    }
-    $sql    =$tpl_chg.implode(', ',$sql_s);
-    $log_sql=$tpl_chg.implode(', ',$sql_g);
+    $sql    =$tpl_chg . implode(', ',$sql_p) . $tpl_cnl;
+    $log_sql=preg_replace("/(PASSWORD\s*=\s*)'[^']*'/i", "$1'***'", $sql);
+    var_dump($sql);
+    //var_dump($log_sql);
 
     $out = PMA_DBI_try_query($sql, $link);
+
+    if ($error        = PMA_DBI_getError()) {
+            PMA_mysqlDie($error, $full_sql_query, '', '');
+    }
 
     if ($start) {
         PMA_replication_slave_control("START", null, $link);
@@ -314,6 +380,7 @@ function PMA_replication_slave_get_master_pos($link = null)
     $keys=array('');
     $output = array();
     $data=PMA_replication_slave_get_status($link);
+    $output=$data;
     if($data){
         $output["Master_Log_File"]      = isset($data["Source_Log_File"]) ? $data["Source_Log_File"] :
                  (isset($data["Master_Log_File"]) ? $data["Master_Log_File"] : null);
@@ -331,6 +398,10 @@ function PMA_replication_slave_get_master_pos($link = null)
         ){
             $output["Running"] = 1 ;
         }
+        // $output["SSL"]      = $data["SSL"];
+        // $output["SSL_ca"]   = $data["SSL_ca"];
+        // $output["SSL_cert"] = $data["SSL_cert"];
+        // $output["SSL_key"]  = $data["SSL_key"];
     }
     return $output;
 }
@@ -489,4 +560,60 @@ function PMA_replication_synchronize_db($db, $src_link, $trg_link, $data = true)
         }
     }
 }
+
+
+
+function fx_replication_get_gtid_variables()
+{
+
+    $serverVarsSession = PMA_DBI_fetch_result('SHOW SESSION VARIABLES;', 0, 1);
+    $serverVars = PMA_DBI_fetch_result('SHOW GLOBAL VARIABLES;', 0, 1);
+
+    if(PMA_MYSQL_SERVER_TYPE == 'MariaDB' && PMA_MYSQL_INT_VERSION >=100010){
+        $gtid_keys=array('gtid_domain_id','server_id'
+                ,'gtid_seq_no','gtid_strict_mode','gtid_ignore_duplicates'
+                ,'gtid_binlog_pos','gtid_binlog_state','gtid_current_pos','gtid_slave_pos');
+    }elseif(PMA_MYSQL_SERVER_TYPE == 'MySQL'   && PMA_MYSQL_INT_VERSION >= 50700){
+        $gtid_keys=array('gtid_mode','enforce_gtid_consistency'
+                ,'gtid_executed','gtid_purged','gtid_owned');
+    }else{
+        $gtid_keys=array();
+    }
+
+    $gtid_vars=array();
+    foreach($gtid_keys as $key){
+        $gtid_vars[$key]=NULL;
+    }
+    
+    foreach ($serverVars as $key => $value) {
+        if(in_array($key,$gtid_keys)){
+            $gtid_vars[$key]=$value;
+        }
+    }
+
+    return $gtid_vars;
+}
+
+
+
+function fsfx_get_replica_channels($server_slave_replication)
+{
+    $replica_channels=array();
+    $channel_name=NULL;
+    for($i=0; $i<count($server_slave_replication); $i++){
+        if( array_key_exists('Connection_name',$server_slave_replication[$i]) ){
+            $channel_name=$server_slave_replication[$i]['Connection_name'];
+            $replica_channels[]= ($channel_name) ? $channel_name : '_';
+            continue;
+        }
+        if( array_key_exists('Channel_Name',$server_slave_replication[$i]) ){
+            $channel_name=$server_slave_replication[$i]['Channel_Name'];
+            $replica_channels[]= ($channel_name) ? $channel_name : '_';
+            continue;
+        }
+    }
+    return $replica_channels;
+}
+
+
 ?>
