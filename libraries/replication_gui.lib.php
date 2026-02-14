@@ -48,8 +48,9 @@ function PMA_replication_gui_changemaster($submitname,$data=NULL)
 
     list($username_length, $hostname_length) = PMA_replication_get_username_hostname_length();
     $Master_Log_File=isset($data['Master_Log_File']) ? $data['Master_Log_File'] : '';
-    $Master_Log_Pos=isset($data['Master_Log_Pos']) ? $data['Master_Log_Pos'] : '';
+    $Master_Log_Pos=($Master_Log_File && isset($data['Master_Log_Pos'])) ? $data['Master_Log_Pos'] : '';
     $Running=isset($data['Running']) ? $data['Running'] : 0;
+    $repl_channel=isset($data['Connection_name']) ? $data['Connection_name'] : (isset($data['Channel_Name']) ? $data['Channel_Name'] : '');
 
     echo '<form method="post" action="server_replication.php">';
     echo PMA_generate_common_hidden_inputs('', '');
@@ -74,26 +75,116 @@ function PMA_replication_gui_changemaster($submitname,$data=NULL)
     echo '  </div>';
     echo '  <div class="item">';
     echo '     <label for="text_port">' . __('Port') . ':</label>';
-    echo '     <input type="text" id="text_port" name="port" maxlength="6" value="3306"  /> leave above blank to keep them unchanged';
+    echo '     <input type="text" id="text_port" name="port" maxlength="6" value="" /> leave above blank to keep them unchanged';
     echo '  </div>';
     echo '  <div class="item">';
-    echo '    <label for="try_sync_master_position">Master Position:</label>';
-    echo '    <input type="checkbox" id="try_sync_master_position" name="try_sync_master_position" value="1" style="width:2em;" />check to sync from master server, or Specify below';
+    echo '    <label>' . __('Master Log') . ' :</label>';
+    //ugly but effective
+    $_url_params = $GLOBALS['url_params'];
+    $_url_params['sl_configure'] = true;
+    $_url_params['repl_clear_scr'] = true;
+    if($Master_Log_File && !isset($_REQUEST['gtid_chglog']) && (
+            (PMA_MYSQL_SERVER_TYPE == 'MySQL'   && PMA_MYSQL_INT_VERSION >= 50700)
+             || (PMA_MYSQL_SERVER_TYPE == 'MariaDB' && PMA_MYSQL_INT_VERSION >=100010)
+        )){
+        $_url_params['gtid_chglog'] = true;
+        $reconfiguremaster_link = PMA_generate_common_url($_url_params);
+        echo '['.$Master_Log_File.':'.$Master_Log_Pos.'] ';
+        echo '&nbsp;&nbsp;  <a href="' . $reconfiguremaster_link . '">Change Log/Pos</a>';
+    }else{
+        echo '    <input type="text" title="Master_Log_File" name="Master_Log_File" maxlength="100" value="'.$Master_Log_File.'" />';
+        echo '    <input type="text" title="Master_Log_Pos" name="Master_Log_Pos" maxlength="30" value="'.$Master_Log_Pos.'" /> / ';
+        echo '    or <input type="checkbox" id="try_sync_master_position" name="try_sync_master_position" value="1" style="width:2em;" />sync from master server';
+        if($Master_Log_File){
+            unset($_url_params['gtid_chglog']);
+            $reconfiguremaster_link = PMA_generate_common_url($_url_params);
+            echo ' &nbsp;&nbsp;  <a href="' . $reconfiguremaster_link . '">Ignore Log/Pos</a>';
+        }
+    }
     echo '  </div>';
-    echo '  <div class="item">';
-    echo '    <label for="text_Master_Log_File">' . __('Master_Log_File') . ' :</label>';
-    echo '    <input type="text" id="text_Master_Log_File" name="Master_Log_File" maxlength="100" value="'.$Master_Log_File.'" />';
-    echo '  </div>';
-    echo '  <div class="item">';
-    echo '    <label for="text_Master_Log_Pos">' . __('Master_Log_Pos') . ' :</label>';
-    echo '    <input type="text" id="text_Master_Log_Pos" name="Master_Log_Pos" maxlength="30" value="'.$Master_Log_Pos.'" />';
-    echo '  </div>';
+    // echo '  <div class="item">';
+    // echo '    <label for="text_Master_Log_Pos">' . __('Master_Log_Pos') . ' :</label>';
+    // echo '  </div>';
+    if(PMA_MYSQL_SERVER_TYPE == 'MySQL'   && PMA_MYSQL_INT_VERSION >= 50700){
+        $support_channel=true;
+        //(    (PMA_MYSQL_SERVER_TYPE == 'MariaDB' && PMA_MYSQL_INT_VERSION >=100010)  ||   )
+        $Auto_Position=isset($data['Auto_Position']) ? $data['Auto_Position'] : '_';
+        $label_gtid_option=(PMA_MYSQL_INT_VERSION >= 80023) ? 'SOURCE_AUTO_POSITION' : 'MASTER_AUTO_POSITION';
+        echo '  <div class="item">';
+        echo '    <label for="gtid_mode">' . __('GTID Mode') . ' :</label>';
+
+        $choices = array(
+            '_' => 'N/A',
+            '1'  => '1',
+            '0' => '0',
+        );
+        echo $label_gtid_option . ' ' .PMA_generate_html_dropdown('Auto_Position', $choices, $Auto_Position, 'Auto_Position');
+
+        // if(PMA_MYSQL_INT_VERSION >= 80023){
+        //     echo '    <input type="checkbox" id="SOURCE_AUTO_POSITION" name="SOURCE_AUTO_POSITION" value="1" style="width:2em;" />SOURCE_AUTO_POSITION=1';
+        // }else{
+        //     echo '    <input type="checkbox" id="MASTER_AUTO_POSITION" name="MASTER_AUTO_POSITION" value="1" style="width:2em;" />MASTER_AUTO_POSITION=1';
+        // }
+        echo '  </div>';
+    }elseif(PMA_MYSQL_SERVER_TYPE == 'MariaDB' && PMA_MYSQL_INT_VERSION >=100010){
+        $support_channel=true;
+        $use_gtid=isset($data['Using_Gtid']) ? strtolower($data['Using_Gtid']) : '_';
+        $label_gtid_option='MASTER_USE_GTID';
+        echo '  <div class="item">';
+        echo '    <label for="gtid_mode">' . __('GTID Mode') . ' :</label>';
+        $choices = array(
+            '_' => 'N/A',
+            'slave_pos'   => 'slave_pos',
+            'current_pos' => 'current_pos',
+            'no' => 'no',
+        );
+        echo $label_gtid_option . ' ' .PMA_generate_html_dropdown('MASTER_USE_GTID', $choices, $use_gtid, 'MASTER_USE_GTID');
+
+
+        //echo '    <input type="checkbox" id="MASTER_USE_GTID" name="MASTER_USE_GTID" value="1" style="width:2em;" />MASTER_AUTO_POSITION=1';
+        echo '  </div>';
+    }
+    if(isset($support_channel) && $support_channel){
+        echo '  <div class="item">';
+        echo '    <label for="repl_channel">' . __('Channel') . ' :</label>';
+        echo '     <input type="text" id="repl_channel" name="repl_channel" maxlength="6" value="'.$repl_channel.'" title="CHANNEL/connection_name" /> ';
+        echo ' <input type="checkbox" id="default_channel" name="default_channel" value="1" style="width:2em;" '
+            .((isset($data['default_channel']) && $data['default_channel']) ? ' checked="checked"' : '')
+            .' />';
+        echo (PMA_MYSQL_SERVER_TYPE == 'MariaDB') ? "connection_name=''" : "default channel (FOR CHANNEL='')";
+        echo '  </div>';
+    }
+    // $SSL        =isset($data['SSL'])        ? ($data['SSL'])        : '0';
+    // $SSL_ca     =isset($data['SSL_ca'])     ? ($data['SSL_ca'])     : '';
+    // $SSL_cert   =isset($data['SSL_cert'])   ? ($data['SSL_cert'])   : '';
+    // $SSL_key    =isset($data['SSL_key'])    ? ($data['SSL_key'])    : '';
+    // echo '  <div class="item">';
+    // echo '    <label for="SSL">' . __('SSL') . ' :</label>';
+    // echo '    <input type="text" id="SSL" name="SSL" maxlength="' . $hostname_length . '" value="" />';
+    // echo '  </div>';
+
     echo ' </fieldset>';
     echo ' <fieldset id="fieldset_user_privtable_footer" class="tblFooters">';
     echo '    <input type="hidden" name="sr_take_action" value="true" />';
     echo '     <input type="submit" name="' . $submitname . '" id="confslave_submit" value="' . __('Go') . '" />';
     echo ' </fieldset>';
     echo '</form>';
+    # ugly script
+    ?><script type="text/javascript">
+$(document).ready(function() {
+    var $input = $('#repl_channel');
+    var $checkbox = $('#default_channel');
+    var originalValue = $input.val();
+    $checkbox.bind('click', function() {
+        if ($(this).is(':checked')) {
+            $input.val('');
+        } else {
+            $input.val(originalValue);
+        }
+    });
+});
+</script> <?php
+
 }
 
 /**
@@ -102,8 +193,9 @@ function PMA_replication_gui_changemaster($submitname,$data=NULL)
  * @param string  $type   either master or slave
  * @param boolean $hidden if true, then default style is set to hidden, default value false
  * @param boolen  $title  if true, then title is displayed, default true
+ * @param string  $channel replica/slave channel_name,connect_name
  */
-function PMA_replication_print_status_table($type, $hidden = false, $title = true)
+function PMA_replication_print_status_table($type, $hidden = false, $title = true, $channel=NULL)
 {
     global ${"{$type}_variables"};
     global ${"{$type}_variables_alerts"};
@@ -140,6 +232,27 @@ function PMA_replication_print_status_table($type, $hidden = false, $title = tru
     echo '   <tbody>';
 
     $svars=${"server_{$type}_replication"}[0];
+    // find the row for current $channel
+    if($type == 'slave' && !is_null($channel)){
+        $found_i=0;
+        $find_channel= ($channel=='_') ? '' : $channel;
+        //foreach($server_slave_replication as )
+        for($i=0; $i<count($server_slave_replication); $i++){
+            if( array_key_exists('Connection_name',$server_slave_replication[$i]) ){
+                if(      $server_slave_replication[$i]['Connection_name']==$find_channel 
+                    || (!$server_slave_replication[$i]['Connection_name'] && !$find_channel) ){
+                    $found_i=$i;
+                }
+            }
+            if( array_key_exists('Channel_Name',$server_slave_replication[$i]) ){
+                if(      $server_slave_replication[$i]['Channel_Name']==$find_channel 
+                    || (!$server_slave_replication[$i]['Channel_Name'] && !$find_channel) ){
+                    $found_i=$i;
+                }
+            }
+        }
+        $svars=$server_slave_replication[$found_i];
+    }
 
     $odd_row = true;
     foreach ($svars as $key => $vv) {

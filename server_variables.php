@@ -115,7 +115,13 @@ $serverVars = PMA_DBI_fetch_result('SHOW GLOBAL VARIABLES;', 0, 1);
 <legend><?php echo __('Filters'); ?></legend>
 <div class="formelement">
     <label for="filterText"><?php echo __('Containing the word:'); ?></label>
-    <input name="filterText" type="text" id="filterText" style="vertical-align: baseline;" />
+    <input name="filterText" type="text" id="filterText" style="vertical-align: baseline;" /><?php
+$kws=array('All','buffer','cache','memory','tmp','collation','optimizer','performance','innodb','binlog','gtid');
+foreach($kws as $key){
+    $_url_params = $GLOBALS['url_params'];
+    $_url_params['qvn'] = ($key=='All') ? '' : $key;
+    ?> <a href="server_variables.php<?php echo PMA_generate_common_url($_url_params); ?>"><?php echo $key; ?></a> <?php
+} ?>
 </div>
 </fieldset>
 <table id="serverVariables" class="data filteredData noclick">
@@ -161,6 +167,17 @@ foreach ($serverVars as $name => $value) {
 </tbody>
 </table>
 <?php
+$fx_qvn = isset($_REQUEST['qvn']) ? $_REQUEST['qvn'] : '';
+if($fx_qvn){
+?><script type="text/javascript">
+    $(function() {
+        var fx_qvn=<?php echo json_encode($fx_qvn); ?>;
+        $('#filterText').val(fx_qvn);
+        $('#filterText').trigger('keyup');
+    });
+</script><?php
+}
+
 
 function formatVariable($name, $value)
 {

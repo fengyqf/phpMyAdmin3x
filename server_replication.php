@@ -93,10 +93,41 @@ if (isset($GLOBALS['sr_take_action'])) {
             }else{
                 $position = array(  "File"  => '',"Position" => 0 );
             }
+            //gtid mode options
+            if(isset($GLOBALS['Auto_Position']) && $GLOBALS['Auto_Position']!='_'){
+                $position['Auto_Position']=(int)($GLOBALS['Auto_Position']);
+            }
+            if(isset($GLOBALS['Using_Gtid']) && $GLOBALS['Using_Gtid']!='_'){
+                $position['Using_Gtid']=PMA_sqlAddSlashes($GLOBALS['Using_Gtid']);
+            }
+            if(isset($GLOBALS['repl_channel']) && $GLOBALS['repl_channel']!='_'){
+                $position['repl_channel']=PMA_sqlAddSlashes($GLOBALS['repl_channel']);
+            }
+            if(isset($GLOBALS['default_channel'])){
+                $position['default_channel']=(int)($GLOBALS['default_channel']);
+            }
+
 
             if(!isset($fx_error)) {
                 $_SESSION['replication']['m_correct']  = true;
                 if (! PMA_replication_slave_change_master($sr['username'], $sr['pma_pw'], $sr['hostname'], $sr['port'], $position, true, false,null,$sql_query)) {
+                    if ($message instanceof PMA_Message) {
+                        if (isset($GLOBALS['special_message'])) {
+                            $message->addMessage($GLOBALS['special_message']);
+                            unset($GLOBALS['special_message']);
+                        }
+                        $message->display();
+                        $type = $message->getLevel();
+                    } else {
+                        echo '<div class="' . $type . '">';
+                        echo PMA_sanitize($message);
+                        if (isset($GLOBALS['special_message'])) {
+                            echo PMA_sanitize($GLOBALS['special_message']);
+                            unset($GLOBALS['special_message']);
+                        }
+                        echo '</div>';
+                    }
+
                     $_SESSION['replication']['sr_action_status'] = 'error';
                     $_SESSION['replication']['sr_action_info'] = __('Unable to change master');
                 } else {
@@ -107,22 +138,35 @@ if (isset($GLOBALS['sr_take_action'])) {
             }
         }
     } elseif (isset($GLOBALS['sr_slave_server_control'])) {
+        $slave_until=array();
+        $channel_to_by=(isset($_GET['channel'])) ? $_GET['channel'] : NULL;
+        if($channel_to_by){
+            $slave_until['repl_channel']=$channel_to_by;
+        }
+        $fx_log_query=array();
+        $fx_tmp_log1=$fx_tmp_log2=$fx_tmp_log3=$fx_tmp_log4='';
         if ($GLOBALS['sr_slave_action'] == 'reset' || $GLOBALS['sr_slave_action'] == 'reset_start') {
-            PMA_replication_slave_control("STOP",null,null,null,$sql_query);
-            PMA_DBI_try_query("RESET SLAVE;");              $sql_query .= "RESET SLAVE;\r\n";
+            PMA_replication_slave_control("STOP",null,null,$slave_until,$fx_tmp_log1);
+            $fx_log_query[]=$fx_tmp_log1;
+            //PMA_DBI_try_query("RESET SLAVE;");              $sql_query .= "RESET SLAVE;\r\n";
+            PMA_replication_slave_control("RESET",null,null,$slave_until,$fx_tmp_log2);
+            $fx_log_query[]=$fx_tmp_log2;
             if($GLOBALS['sr_slave_action'] == 'reset_start'){
-                PMA_replication_slave_control("START",null,null,null,$sql_query);
+                PMA_replication_slave_control("START",null,null,$slave_until,$fx_tmp_log3);
+                $fx_log_query[]=$fx_tmp_log3;
             }
         } else {
             $tmp_parm=isset($GLOBALS['sr_slave_control_parm']) ? $GLOBALS['sr_slave_control_parm'] : '';
-            $slave_until=array(
-                'Until_Condition' => isset($GLOBALS['Until_Condition']) ? $GLOBALS['Until_Condition'] : '',
-                'Until_Log_File' => isset($GLOBALS['Until_Log_File']) ? $GLOBALS['Until_Log_File'] : '',
-                'Until_Log_Pos' => isset($GLOBALS['Until_Log_Pos']) ? (int)($GLOBALS['Until_Log_Pos']) : 0,
-                );
-            PMA_replication_slave_control($GLOBALS['sr_slave_action'], $tmp_parm,null,$slave_until,$sql_query);
+            $slave_until['Until_Condition'] = isset($GLOBALS['Until_Condition']) ? $GLOBALS['Until_Condition'] : '';
+            $slave_until['Until_Log_File']  = isset($GLOBALS['Until_Log_File']) ? $GLOBALS['Until_Log_File'] : '';
+            $slave_until['Until_Log_Pos']   = isset($GLOBALS['Until_Log_Pos']) ? (int)($GLOBALS['Until_Log_Pos']) : 0;
+
+            PMA_replication_slave_control($GLOBALS['sr_slave_action'], $tmp_parm,null,$slave_until,$fx_tmp_log4);
+            $fx_log_query[]=$fx_tmp_log4;
         }
         $refresh = true;
+        var_dump($fx_log_query);
+        $sql_query = implode("\r\n\r\n",$fx_log_query);
 
     } elseif (isset($GLOBALS['sr_slave_skip_error'])) {
         $count = 1;
@@ -143,6 +187,10 @@ if (isset($GLOBALS['sr_take_action'])) {
             $slave_until=array();
         }else{
             $fx_start_slave=0;
+        }
+        $channel_to_by=(isset($_GET['channel'])) ? $_GET['channel'] : NULL;
+        if($channel_to_by){
+            $slave_until['repl_channel']=$channel_to_by;
         }
         if($fx_start_slave==1){
             PMA_replication_slave_control("START","SQL_THREAD",null,$slave_until,$sql_query);
@@ -248,7 +296,9 @@ if(isset($GLOBALS['mslvst'])){
         });
     </script><?php
     }
-    PMA_replication_print_status_table('slave',false,$fx_display_title);
+
+    $channel_to_show=(isset($_GET['channel'])) ? $_GET['channel'] : NULL;
+    PMA_replication_print_status_table('slave',false,$fx_display_title,$channel_to_show);
     require './libraries/footer.inc.php';
 }
 
@@ -286,6 +336,12 @@ if ($server_master_status) {
         $_url_params['repl_clear_scr'] = true;
 
         echo '  <li><a href="' . PMA_generate_common_url($_url_params) . '" id="master_addslaveuser_href">' . __('Add slave replication user') . '</a></li>';
+        if(    (PMA_MYSQL_SERVER_TYPE == 'MariaDB' && PMA_MYSQL_INT_VERSION >=100010)
+            || (PMA_MYSQL_SERVER_TYPE == 'MySQL'   && PMA_MYSQL_INT_VERSION >= 50700)  ){
+        $_url_params = $GLOBALS['url_params'];
+        $_url_params['qvn'] = 'gtid';
+        echo '  <li><a href="server_variables.php' . PMA_generate_common_url($_url_params) . '" id="master_addslaveuser_href">gtid variables...</a></li>';
+        }
     }
 
     // Display 'Add replication slave user' form
@@ -362,6 +418,9 @@ if (! isset($GLOBALS['repl_clear_scr'])) {
         $_url_params['sr_take_action'] = true;
         $_url_params['sr_slave_server_control'] = true;
 
+        if( isset($_GET['channel']) ){
+            $_url_params['channel'] = $_GET['channel'];
+        }
         if ($fx_status['Slave_IO_Running'] == 'No') {
             $_url_params['sr_slave_action'] = 'start';
         } else {
@@ -401,41 +460,76 @@ if (! isset($GLOBALS['repl_clear_scr'])) {
         $_url_params['sr_take_action'] = true;
         $_url_params['sr_slave_skip_error'] = true;
         $_url_params['sr_skip_errors_count'] = 1;
+        if( isset($_GET['channel']) ){
+            $_url_params['channel'] = $_GET['channel'];
+        }
         $slave_skip_error_link = PMA_generate_common_url($_url_params);
 
         $_url_params = $GLOBALS['url_params'];
         $_url_params['sl_configure'] = true;
         $_url_params['repl_clear_scr'] = true;
+        if( isset($_GET['channel']) ){
+            $_url_params['channel'] = $_GET['channel'];
+        }
 
         $reconfiguremaster_link = PMA_generate_common_url($_url_params);
 
         //echo __('Server is configured as slave in a replication process. Would you like to:');
         //echo '<br />';
         echo '<ul>';
-        echo ' <li>IO Thread: ';
-        if ($fx_status['Slave_IO_Running'] == 'No') {
-            echo PMA_getImage('s_error2.png','Slave IO Thread Stoped');
+        $channel_to_show=(isset($_GET['channel'])) ? $_GET['channel'] : NULL;
+        if(isset($replica_channels) && is_array($replica_channels)){
+            echo ' <li>Channels/Connections: ';
+            echo ' [ ';
+            $_url_params = $GLOBALS['url_params'];
+            foreach($replica_channels as $key =>$value){
+                $_url_params['channel'] = $value;
+                $_url_params['display_st'] = true;
+                $fx_mslvst_link = PMA_generate_common_url($_url_params);
+                $fsfx_active_style=(isset($_GET['channel']) && $value==$_GET['channel']) ? ' class="notice" style="padding:1px 3px;"' : '';
+                echo ' &nbsp; <a href="'.$fx_mslvst_link.'"'.$fsfx_active_style.'>'. $value .'</a>';
+            }
+            echo ' ] ';
+            echo "</li>\r\n";
         }else{
-            echo PMA_getImage('s_success.png','Slave IO Thread is Running');
+            $fsfx_single_channel=true;
         }
-        echo '  &nbsp;&nbsp; SQL Thread: ';
-        if ($fx_status['Slave_SQL_Running'] == 'No') {
-            echo PMA_getImage('s_error2.png','SQL Thread Stoped');
+        if($channel_to_show || isset($fsfx_single_channel)){
+            echo ' <li>IO Thread: ';
+            if ($fx_status['Slave_IO_Running'] == 'No') {
+                echo PMA_getImage('s_error2.png','Slave IO Thread Stoped');
+            }else{
+                echo PMA_getImage('s_success.png','Slave IO Thread is Running');
+            }
+            echo '  &nbsp;&nbsp; SQL Thread: ';
+            if ($fx_status['Slave_SQL_Running'] == 'No') {
+                echo PMA_getImage('s_error2.png','SQL Thread Stoped');
+            }else{
+                echo PMA_getImage('s_success.png','SQL Thread is Running');
+            }
+            echo '</li>';
+        }
+        if( isset($_GET['channel']) && isset($_GET['display_st']) ){
+            $fx_hidden=false;
+            $fx_tmp_st='';
         }else{
-            echo PMA_getImage('s_success.png','SQL Thread is Running');
+            $fx_hidden=true;
+            $fx_tmp_st=' style="display:none;"';
         }
-        echo '</li>';
         echo ' <li><a href="#" id="slave_status_href">' . __('See slave status table') . '...</a>';
-        echo '&nbsp;&nbsp;&nbsp; <span id="mslvst" style="display:none;">[ Reload ';
+        echo '&nbsp;&nbsp;&nbsp; <span id="mslvst"'.$fx_tmp_st.'>[ Reload ';
         $_url_params = $GLOBALS['url_params'];
         $fs_itvs=array('once',1,3,5,10,15,30,60,120,300);
         foreach($fs_itvs as $key){
             $_url_params['mslvst'] = $key;
+            if(isset($_GET['channel'])){
+                $_url_params['channel'] = $_GET['channel'];
+            }
             $fx_mslvst_link = PMA_generate_common_url($_url_params);
             echo '<a href="'.$fx_mslvst_link.'">&nbsp;'.$key.( $key>0 ? 's' : '' ) .'&nbsp;</a>&nbsp;&nbsp;';
         }
         echo ']</span></li>';
-        echo PMA_replication_print_status_table('slave', true, false);
+        echo PMA_replication_print_status_table('slave', $fx_hidden, false,$channel_to_show);
         echo '<script>$(document).ready(function(){$("#slave_status_href").click(function(){$("#mslvst").toggle();})});</script>';
         if (isset($_SESSION['replication']['m_correct']) && $_SESSION['replication']['m_correct'] == true) {
             echo ' <li><a href="#" id="slave_synchronization_href">' . __('Synchronize databases with master') . '</a></li>';
@@ -451,6 +545,19 @@ if (! isset($GLOBALS['repl_clear_scr'])) {
             echo ' </div>';
         }
         echo ' <li><a href="#" id="slave_control_href">' . __('Control slave:') . '</a>';
+
+        if(isset($replica_channels) && is_array($replica_channels)){
+            echo ' [ ';
+            $_url_params = $GLOBALS['url_params'];
+            foreach($replica_channels as $key =>$value){
+                $_url_params['channel'] = $value;
+                $fx_mslvst_link = PMA_generate_common_url($_url_params);
+                $fsfx_active_style=(isset($_GET['channel']) && $value==$_GET['channel']) ? ' class="notice" style="padding:1px 3px;"' : '';
+                echo ' &nbsp; <a href="'.$fx_mslvst_link.'"'.$fsfx_active_style.'>'. $value .'</a>';
+            }
+            echo ' ] ';
+        }
+
         echo ' <div id="slave_control_gui" style="display: block;">';
         echo '  <ul>';
         echo '   <li><a href="'. $slave_control_full_link . '">' . (($fx_status['Slave_IO_Running'] == 'No' || $fx_status['Slave_SQL_Running'] == 'No') ? __('Full start') : __('Full stop')) . ' </a></li>';
@@ -521,6 +628,16 @@ if (! isset($GLOBALS['repl_clear_scr'])) {
     echo '</fieldset>';
 }
 if (isset($GLOBALS['sl_configure'])) {
+    if(    (PMA_MYSQL_SERVER_TYPE == 'MariaDB' && PMA_MYSQL_INT_VERSION >=100010)
+            || (PMA_MYSQL_SERVER_TYPE == 'MySQL'   && PMA_MYSQL_INT_VERSION >= 50700)  ){
+        $gtid_vars=fx_replication_get_gtid_variables();
+        echo '  <div class="item"><ul>';
+        foreach($gtid_vars as $key=>$value){
+            echo "  <li>{$key}: {$value}</li>";
+        }
+        echo '  </ul></div>';
+    }
+
     $fx_data=PMA_replication_slave_get_master_pos();
     PMA_replication_gui_changemaster("slave_changemaster",$fx_data);
 }
