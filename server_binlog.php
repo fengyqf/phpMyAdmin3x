@@ -15,6 +15,7 @@ require_once './libraries/common.inc.php';
  * Does the common work, provides $binary_logs
  */
 require_once './libraries/server_common.inc.php';
+require './libraries/replication.inc.php';
 
 /**
  * Displays the links
@@ -87,10 +88,34 @@ if ($bl_type=='BINLOG' && !array_key_exists($fx_curr_log, $binary_logs)) {
     $url_params['log'] = $fx_curr_log;
 }
 
+$chnl_a="";
+$chnl_x="";
 $sql_query = 'SHOW BINLOG EVENTS';
 if($bl_type=='RELAYLOG'){
-    $sql_query = 'SHOW RELAYLOG EVENTS';
+    if(isset($_GET["channel"])){
+        $p_cnn=" '".PMA_sqlAddSlashes($_GET["channel"])."'";
+        //ugly hack
+        if($_GET["channel"]=='_'){
+            $p_cnn=" ''";
+        }
+    }elseif(isset($_GET["default_channel"]) && $_GET["default_channel"]){
+        $p_cnn=" ''";
+    }else{
+        $p_cnn="";
+    }
+    if(PMA_MYSQL_SERVER_TYPE == 'MariaDB' && PMA_MYSQL_INT_VERSION >= 100501){
+        $chnl_a=$p_cnn ? " {$p_cnn}" : '';;
+        $chnl_x="";
+    }elseif(PMA_MYSQL_SERVER_TYPE == 'MySQL' && PMA_MYSQL_INT_VERSION >= 80022){
+        $chnl_a="";
+        $chnl_x=$p_cnn ? " FOR CHANNEL{$p_cnn}" : '';
+    }else{
+        $chnl_a="";
+        $chnl_x="";
+    }
+    $sql_query = "SHOW RELAYLOG{$chnl_a} EVENTS";
     $url_params['bl_type']=$bl_type;
+    $url_params['channel'] = $_GET["channel"];
 }
 if ($fx_curr_log) {
     $sql_query .= ' IN \'' . PMA_sqlAddSlashes($fx_curr_log) . '\'';
@@ -102,6 +127,8 @@ if ($fromPos > 0) {
 if ($GLOBALS['cfg']['MaxRows'] !== 'all') {
     $sql_query .= ' LIMIT ' . $pos . ', ' . (int) $GLOBALS['cfg']['MaxRows'];
 }
+
+$sql_query .= $chnl_x;
 
 /**
  * Sends the query
@@ -148,7 +175,16 @@ if($bl_type=='RELAYLOG'){
     $this_url_params['bl_type']='';
     echo ' &nbsp; | &nbsp;<a href="./server_binlog.php' . PMA_generate_common_url($this_url_params) . '">Binlog</a>';
     $this_url_params['bl_type']='RELAYLOG';
-    echo ' &nbsp;<a href="./server_binlog.php' . PMA_generate_common_url($this_url_params) . '">RelayLog</a>';
+    if(count($replica_channels)>1 || (count($replica_channels)==1 && $replica_channels[0] ) ){
+        echo ' &nbsp;| RelayLog [';
+        foreach($replica_channels as $value){
+            $this_url_params['channel']=( $value ? $value : '_');
+            echo ' <a href="./server_binlog.php' . PMA_generate_common_url($this_url_params) . '">'.$value.'</a>';
+        }
+        echo ' ]';
+    }else{
+        echo ' &nbsp;| <a href="./server_binlog.php' . PMA_generate_common_url($this_url_params) . '">RelayLog</a>';
+    }
     echo '</span>';
     echo '</fieldset>';
     echo '</form>';
@@ -220,7 +256,16 @@ if($bl_type=='RELAYLOG'){
     $this_url_params = $url_params;
     $this_url_params['log']=null;
     $this_url_params['bl_type']='RELAYLOG';
-    echo ' &nbsp; | &nbsp;<span><a href="./server_binlog.php' . PMA_generate_common_url($this_url_params) . '">RelayLog</a></span>';
+    if(count($replica_channels)>1 || (count($replica_channels)==1 && $replica_channels[0] ) ){
+        echo ' &nbsp;| RelayLog [';
+        foreach($replica_channels as $value){
+            $this_url_params['channel']=( $value ? $value : '_');
+            echo ' <a href="./server_binlog.php' . PMA_generate_common_url($this_url_params) . '">'.$value.'</a>';
+        }
+        echo ' ]';
+    }else{
+        echo ' &nbsp;| <a href="./server_binlog.php' . PMA_generate_common_url($this_url_params) . '">RelayLog</a>';
+    }
 
     echo '</fieldset>';
     echo '</form>';
