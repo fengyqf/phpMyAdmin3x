@@ -3834,7 +3834,7 @@ function PMA_fx_show_slave_status()
         SHOW {SLAVE | REPLICA} STATUS [FOR CHANNEL channel]
     */
     if(PMA_MYSQL_SERVER_TYPE == 'MariaDB' && PMA_MYSQL_INT_VERSION >= 100501){
-        $sql = 'SHOW REPLICA STATUS';
+        $sql = 'SHOW ALL REPLICAS STATUS';
     }elseif(PMA_MYSQL_SERVER_TYPE == 'MySQL' && PMA_MYSQL_INT_VERSION >= 80022){
         $sql = 'SHOW REPLICA STATUS';
     }else{

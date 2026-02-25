@@ -51,6 +51,9 @@ function PMA_replication_gui_changemaster($submitname,$data=NULL)
     $Master_Log_Pos=($Master_Log_File && isset($data['Master_Log_Pos'])) ? $data['Master_Log_Pos'] : '';
     $Running=isset($data['Running']) ? $data['Running'] : 0;
     $repl_channel=isset($data['Connection_name']) ? $data['Connection_name'] : (isset($data['Channel_Name']) ? $data['Channel_Name'] : '');
+    if(!$repl_channel && isset($_GET['channel'])){
+        $repl_channel=$_GET['channel'];
+    }
 
     echo '<form method="post" action="server_replication.php">';
     echo PMA_generate_common_hidden_inputs('', '');
@@ -83,6 +86,7 @@ function PMA_replication_gui_changemaster($submitname,$data=NULL)
     $_url_params = $GLOBALS['url_params'];
     $_url_params['sl_configure'] = true;
     $_url_params['repl_clear_scr'] = true;
+    $_url_params['channel'] = $repl_channel;
     if($Master_Log_File && !isset($_REQUEST['gtid_chglog']) && (
             (PMA_MYSQL_SERVER_TYPE == 'MySQL'   && PMA_MYSQL_INT_VERSION >= 50700)
              || (PMA_MYSQL_SERVER_TYPE == 'MariaDB' && PMA_MYSQL_INT_VERSION >=100010)
@@ -138,20 +142,27 @@ function PMA_replication_gui_changemaster($submitname,$data=NULL)
             'current_pos' => 'current_pos',
             'no' => 'no',
         );
-        echo $label_gtid_option . ' ' .PMA_generate_html_dropdown('MASTER_USE_GTID', $choices, $use_gtid, 'MASTER_USE_GTID');
+        echo $label_gtid_option . ' ' .PMA_generate_html_dropdown('Use_Gtid', $choices, $use_gtid, 'Use_Gtid');
 
 
         //echo '    <input type="checkbox" id="MASTER_USE_GTID" name="MASTER_USE_GTID" value="1" style="width:2em;" />MASTER_AUTO_POSITION=1';
         echo '  </div>';
     }
     if(isset($support_channel) && $support_channel){
+        $for_default_channel=false;
+        if(isset($data['default_channel']) && $data['default_channel']){
+            $for_default_channel=true;
+        }elseif($repl_channel=='_'){
+            $for_default_channel=true;
+            $repl_channel='';
+        }
         echo '  <div class="item">';
         echo '    <label for="repl_channel">' . __('Channel') . ' :</label>';
         echo '     <input type="text" id="repl_channel" name="repl_channel" maxlength="6" value="'.$repl_channel.'" title="CHANNEL/connection_name" /> ';
         echo ' <input type="checkbox" id="default_channel" name="default_channel" value="1" style="width:2em;" '
-            .((isset($data['default_channel']) && $data['default_channel']) ? ' checked="checked"' : '')
+            .( $for_default_channel ? ' checked="checked"' : '')
             .' />';
-        echo (PMA_MYSQL_SERVER_TYPE == 'MariaDB') ? "connection_name=''" : "default channel (FOR CHANNEL='')";
+        echo (PMA_MYSQL_SERVER_TYPE == 'MariaDB') ? "default connection (connection_name='')" : "default channel (FOR CHANNEL='')";
         echo '  </div>';
     }
     // $SSL        =isset($data['SSL'])        ? ($data['SSL'])        : '0';
@@ -202,6 +213,7 @@ function PMA_replication_print_status_table($type, $hidden = false, $title = tru
     global ${"{$type}_variables_oks"};
     global ${"server_{$type}_replication"};
     global ${"strReplicationStatus_{$type}"};
+    global $replica_channels;
 
     // TODO check the Masters server id?
     // seems to default to '1' when queried via SHOW VARIABLES , but resulted in error on the master when slave connects
@@ -222,19 +234,23 @@ function PMA_replication_print_status_table($type, $hidden = false, $title = tru
         echo '<br />';
     }
 
+    $col_count=count(${"server_{$type}_replication"});
     echo '   <table id="server' . $type . 'replicationsummary" class="data"> ';
     echo '   <thead>';
     echo '    <tr>';
     echo '     <th>' . __('Variable') . '</th>';
-    echo '        <th>' . __('Value') . '</th>';
+    for($jj=0;$jj<$col_count;$jj++){
+        if($type == 'slave' && !is_null($channel) && $jj>0){ break; }
+        echo '     <th>' . __('Value') . '</th>';
+    }
     echo '    </tr>';
     echo '   </thead>';
     echo '   <tbody>';
 
     $svars=${"server_{$type}_replication"}[0];
-    // find the row for current $channel
+    // find the row for current $channel if possible
+    $found_i=-1;
     if($type == 'slave' && !is_null($channel)){
-        $found_i=0;
         $find_channel= ($channel=='_') ? '' : $channel;
         //foreach($server_slave_replication as )
         for($i=0; $i<count($server_slave_replication); $i++){
@@ -260,6 +276,16 @@ function PMA_replication_print_status_table($type, $hidden = false, $title = tru
         echo '     <td class="name">';
         echo        $key;
         echo '     </td>';
+      for($jj=0;$jj<$col_count;$jj++){ // START: columns for replica channel/connection
+        $svars=${"server_{$type}_replication"}[$jj];
+        // only display current channel(if found), overwrite $svars; and exit columns
+        if($type == 'slave' && !is_null($channel) && $found_i>=0){
+            if($jj==0){  // overwrite $svars
+                $svars=$server_slave_replication[$found_i];
+            }elseif($jj>=0){
+                break;  // exit columns
+            }
+        }
         echo '     <td class="value">';
 
         // TODO change to regexp or something, to allow for negative match
@@ -282,6 +308,16 @@ function PMA_replication_print_status_table($type, $hidden = false, $title = tru
                 'log'       =>  $svars['Relay_Log_File'],
                 'fromPos'   =>  $svars['Relay_Log_Pos'],
             );
+            if(count($replica_channels)>1){
+                if(array_key_exists('Connection_name',$svars)){
+                    $fsfx_channel_key='Connection_name';
+                }elseif(array_key_exists('Channel_Name',$svars)){
+                    $fsfx_channel_key='Channel_Name';
+                }
+                if(isset($fsfx_channel_key)){
+                    $_url_params['channel']=($svars[$fsfx_channel_key] ? $svars[$fsfx_channel_key] : '_');
+                }
+            }
             echo '<a href="server_binlog.php'.PMA_generate_common_url($_url_params).'">'.$svars[$key].'</a>';
         }else{
             echo $svars[$key];
@@ -289,6 +325,7 @@ function PMA_replication_print_status_table($type, $hidden = false, $title = tru
         echo '</span>';
 
         echo '  </td>';
+      } // END: columns for replica channel/connection
         echo ' </tr>';
 
         $odd_row = ! $odd_row;

@@ -154,7 +154,7 @@ function PMA_extract_db_or_table($string, $what = 'db')
     }
 }
 /**
- * @param string $action  possible values: START or STOP
+ * @param string $action  possible values: START or STOP or RESET
  * @param string $control default: null, possible values: SQL_THREAD or IO_THREAD or null. If it is set to null, it controls both SQL_THREAD and IO_THREAD
  * @param mixed  $link    mysql link
  * @param array $untile   mixed args,such as position, channel, etc
@@ -165,6 +165,10 @@ function PMA_replication_slave_control($action, $control = '', $link = null,$unt
 {
     if(isset($until["repl_channel"]) && $until["repl_channel"]){
         $p_cnn=" '".PMA_sqlAddSlashes($until["repl_channel"])."'";
+        //ugly hack
+        if($until["repl_channel"]=='_'){
+            $p_cnn=" ''";
+        }
     }elseif(isset($until["default_channel"]) && $until["default_channel"]){
         $p_cnn=" ''";
     }else{
@@ -174,7 +178,7 @@ function PMA_replication_slave_control($action, $control = '', $link = null,$unt
     if(PMA_MYSQL_SERVER_TYPE == 'MariaDB' && PMA_MYSQL_INT_VERSION >= 100501){
         $slvtx='REPLICA';
         $mstx='MASTER';
-        $chnl_a=$p_cnn ? " '{$p_cnn}'" : '';;
+        $chnl_a=$p_cnn ? " {$p_cnn}" : '';;
         $chnl_x="";
     }elseif(PMA_MYSQL_SERVER_TYPE == 'MySQL' && PMA_MYSQL_INT_VERSION >= 80022){
         $slvtx='REPLICA';
@@ -190,11 +194,14 @@ function PMA_replication_slave_control($action, $control = '', $link = null,$unt
     $action = strtoupper((string)$action);
     $control = strtoupper((string)$control);
 
-    if ($action != "START" && $action != "STOP") {
+    if ($action != "START" && $action != "STOP" && $action != "RESET") {
         return -1;
     }
     if ($control != "SQL_THREAD" && $control != "IO_THREAD" && $control != '') {
         return -1;
+    }
+    if($action == "RESET" && isset($until['reset_all']) && $until['reset_all']){
+        $control='ALL';
     }
     // reply to a defined position: START SLAVE UNTIL...
     if($action == "START" && $control == "SQL_THREAD" && isset($until['Until_Log_File']) && $until['Until_Log_File']){
@@ -281,13 +288,13 @@ function PMA_replication_slave_change_master($user, $password, $host, $port, $po
             $k=(substr($key,0,7)=='MASTER_') ? ('PRIMARY_'.substr($key,7)) : $key;
             $opts[$k]=$value;
         }
-        $opts['SOURCE_USE_GTID']   =  'Use_Gtid/r`';
+        $opts['SOURCE_USE_GTID']   =  'Use_Gtid/r';
     }else{
         $tpl_chg="CHANGE MASTER{$p_cnn} TO ";
         $tpl_cnl="";
         $opts=array();
         $opts=$opts_tpl;
-        $opts['SOURCE_USE_GTID']   =  'Use_Gtid/r';
+        $opts['MASTER_USE_GTID']   =  'Use_Gtid/r';
     }
 
     $sql_p=array();
@@ -309,8 +316,6 @@ function PMA_replication_slave_change_master($user, $password, $host, $port, $po
 
     $sql    =$tpl_chg . implode(', ',$sql_p) . $tpl_cnl;
     $log_sql=preg_replace("/(PASSWORD\s*=\s*)'[^']*'/i", "$1'***'", $sql);
-    var_dump($sql);
-    //var_dump($log_sql);
 
     $out = PMA_DBI_try_query($sql, $link);
 
@@ -615,5 +620,46 @@ function fsfx_get_replica_channels($server_slave_replication)
     return $replica_channels;
 }
 
+function fsfx_get_replica_status_by_channel($server_slave_replication,$channel_name)
+{
+    if(!$server_slave_replication){
+        return false;
+    }
+    if($channel_name=='_'){
+        $channel_name='';
+    }
+    for($i=0; $i<count($server_slave_replication); $i++){
+        if( array_key_exists('Connection_name',$server_slave_replication[$i]) ){
+            if($server_slave_replication[$i]['Connection_name']==$channel_name){
+                return $server_slave_replication[$i];
+            }
+        }
+        if( array_key_exists('Channel_Name',$server_slave_replication[$i]) ){
+            if($server_slave_replication[$i]['Channel_Name']==$channel_name){
+                return $server_slave_replication[$i];
+            }
+        }
+    }
+    // return if only one line
+    if(count($server_slave_replication)==1){
+        return $server_slave_replication[0];
+    }
+    return false;
+}
+
+function fsfx_fix_slave_status($slave_status)
+{
+    $key_map=array(
+        'Slave_IO_Running'      =>  'Replica_IO_Running',
+        'Slave_SQL_Running'     =>  'Replica_SQL_Running',
+    );
+
+    foreach($key_map as $from => $to){
+        if(array_key_exists($from,$slave_status) && !array_key_exists($to,$slave_status)){
+            $slave_status[$to]=$slave_status[$from];
+        }
+    }
+    return $slave_status;
+}
 
 ?>
