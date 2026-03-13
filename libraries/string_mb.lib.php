@@ -63,4 +63,11 @@ function PMA_strtolower($string)
     return mb_strtolower($string);
 }
 
+
+
+function PMA_ord($string)
+{
+    return mb_ord($string);
+}
+
 ?>

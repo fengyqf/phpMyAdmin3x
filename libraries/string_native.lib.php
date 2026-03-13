@@ -63,4 +63,10 @@ function PMA_strtolower($string)
     return strtolower($string);
 }
 
+
+function PMA_ord($string)
+{
+    return ord($string);
+}
+
 ?>
