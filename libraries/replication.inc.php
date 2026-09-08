@@ -424,47 +424,6 @@ function PMA_replication_slave_get_until($link = null)
 }
 
 /**
- * Get list of replicated databases on master server
- *
- * @param mixed $link mysql link
- *
- * @return array array of replicated databases
- */
-
-function PMA_replication_master_replicated_dbs($link = null)
-{
-    $data = PMA_fx_show_slave_status($link);
-
-    $do_db     = array();
-    $ignore_db = array();
-
-    if (! empty($data[0]['Binlog_Do_DB'])) {
-        $do_db     = explode(',', $data[0]['Binlog_Do_DB']);
-    }
-    if (! empty($data[0]['Binlog_Ignore_DB'])) {
-        $ignore_db = explode(',', $data[0]['Binlog_Ignore_DB']);
-    }
-
-    $tmp_alldbs = PMA_DBI_query('SHOW DATABASES;', $link);
-    while ($tmp_row = PMA_DBI_fetch_row($tmp_alldbs)) {
-        if (PMA_is_system_schema($tmp_row[0]))
-            continue;
-        if (count($do_db) == 0) {
-            if (array_search($tmp_row[0], $ignore_db) !== false) {
-                continue;
-            }
-            $dblist[] = $tmp_row[0];
-
-        } else {
-            if (array_search($tmp_row[0], $do_db) !== false) {
-                $dblist[] = $tmp_row[0];
-            }
-        }
-    } // end while
-
-    return $link;
-}
-/**
  * This function provides synchronization of structure and data between two mysql servers.
  *
  * @todo improve code sharing between the function and synchronization
