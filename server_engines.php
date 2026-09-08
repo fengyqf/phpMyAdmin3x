@@ -114,7 +114,7 @@ if ( $optab=='engine' && !$dtname ) {
     echo '<h2>' . "\n"
        . ($GLOBALS['cfg']['MainPageIconic'] ? PMA_getImage('b_engine.png') : '')
        . "\n" . __('Storage Engines') . "\n"
-       . (isset($fsfx_tabs['engine']['alink']) ? '<a href="'.$fsfx_tabs[$key]['alink'].'" title="view full table of information_schema">raw</a>'."\n" : '')
+       . (isset($fsfx_tabs[$optab]['alink']) ? '<a href="'.$fsfx_tabs[$optab]['alink'].'" title="view full table of information_schema">raw</a>'."\n" : '')
        . '</h2>' . "\n";
 
 
@@ -232,7 +232,7 @@ if ( $optab=='engine' && !$dtname ) {
     echo '<h2>' . "\n"
        . ($GLOBALS['cfg']['MainPageIconic'] ? PMA_getImage('b_plugin.png') : '')
        . "\n" . __('Plugins') . "\n"
-       . (isset($fsfx_tabs['engine']['alink']) ? '<a href="'.$fsfx_tabs[$key]['alink'].'" title="view full table of information_schema">raw</a>'."\n" : '')
+       . (isset($fsfx_tabs[$optab]['alink']) ? '<a href="'.$fsfx_tabs[$optab]['alink'].'" title="view full table of information_schema">raw</a>'."\n" : '')
        . '</h2>' . "\n";
 
     $tbheader= '<table class="noclick">' . "\n"
@@ -304,7 +304,7 @@ if ( $optab=='engine' && !$dtname ) {
     echo '<h2>' . "\n"
        . ($GLOBALS['cfg']['MainPageIconic'] ? PMA_getImage('b_plugin.png') : '')
        . "\n" . __('Plugins') . "\n"
-       . (isset($fsfx_tabs['engine']['alink']) ? '<a href="'.$fsfx_tabs[$key]['alink'].'" title="view full table of information_schema">raw</a>'."\n" : '')
+       . (isset($fsfx_tabs[$optab]['alink']) ? '<a href="'.$fsfx_tabs[$optab]['alink'].'" title="view full table of information_schema">raw</a>'."\n" : '')
        . '</h2>' . "\n";
     echo '<div class="group"><h2>'.$plugin.'</h2>'."\n";
 
