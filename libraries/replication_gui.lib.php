@@ -267,7 +267,9 @@ function PMA_replication_print_status_table($type, $hidden = false, $title = tru
                 }
             }
         }
-        $svars=$server_slave_replication[$found_i];
+        if ($found_i >= 0) {
+            $svars = $server_slave_replication[$found_i];
+        }
     }
 
     $odd_row = true;
