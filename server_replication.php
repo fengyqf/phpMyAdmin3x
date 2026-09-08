@@ -633,7 +633,7 @@ if (! isset($GLOBALS['repl_clear_scr'])) {
             echo ' <div id="slave_errormanagement_gui" style="display: none;">';
         }
         PMA_Message::notice(__('Skipping errors might lead into unsynchronized master and slave!'))->display();
-        echo "   <div>Last Error: [{$fx_status['Last_Errno']}] @{$fx_status['Relay_Master_Log_File']}:{$fx_status['Exec_Master_Log_Pos']}</dv><div>{$fx_status['Last_Error']}</div>";
+        echo "   <div>Last Error: [{$fx_status['Last_Errno']}] @{$fx_status['Relay_Master_Log_File']}:{$fx_status['Exec_Master_Log_Pos']}</div><div>{$fx_status['Last_Error']}</div>";
         echo '  <ul>';
         echo '   <li><a href="' . $slave_skip_error_link . '" title="SQL_SLAVE_SKIP_COUNTER=1">' . __('Skip current error') . '</a></li>';
         echo '   <li>' . __('Skip next');
