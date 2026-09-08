@@ -240,7 +240,7 @@ if($bl_type=='RELAYLOG'){
         $this_url_params['log']=$fx_next_log;
         echo ' &nbsp;&nbsp;<span><a href="./server_binlog.php' . PMA_generate_common_url($this_url_params) . '">Next</a></span>';
     }else{
-        echo ' &nbsp;&nbsp;<span style="color:#999999;">Next</a></span>';
+        echo ' &nbsp;&nbsp;<span style="color:#999999;">Next</span>';
     }
     if($fxop_binlog=='try_purge'){
         $this_url_params['fxop_binlog']='do_purge';

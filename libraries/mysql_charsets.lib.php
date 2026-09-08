@@ -166,7 +166,7 @@ function PMA_generateCharsetDropdownBox($type = PMA_CSDROPDOWN_COLLATION,
         }
     }
     $return_str .= '</select>' . "\n";
-    $return_str .= (!$label) ? '' : ' <dfn title="define pinned_collations as php array with collations in config.ini.php for quick select">?</dfn> ';
+    $return_str .= (!$label) ? '' : ' <dfn title="define pinned_collations as php array with collations in config.inc.php for quick select">?</dfn> ';
 
     return $return_str;
 }
