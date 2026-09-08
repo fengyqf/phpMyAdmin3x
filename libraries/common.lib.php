@@ -3812,7 +3812,7 @@ function PMA_fx_show_master_status($link = null)
     */
     if(PMA_MYSQL_SERVER_TYPE == 'MariaDB' && PMA_MYSQL_INT_VERSION >= 100502){
         $sql = 'SHOW BINLOG STATUS';
-    }elseif(PMA_MYSQL_SERVER_TYPE == 'MySQL' && PMA_MYSQL_INT_VERSION >= 50700){
+    }elseif(PMA_MYSQL_SERVER_TYPE == 'MySQL' && PMA_MYSQL_INT_VERSION >= 80200){
         $sql = 'SHOW BINARY LOG STATUS';
     }else{
         $sql = 'SHOW MASTER STATUS';
