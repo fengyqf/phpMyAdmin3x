@@ -331,7 +331,7 @@ class PMA_Table
 
         // array_key_exists allows for null values
         if (!array_key_exists($info, $tb_cache)) {
-            if ($disable_error) {
+            if (! $disable_error) {
                 trigger_error(__('unknown table status: ') . $info, E_USER_WARNING);
             }
             return NULL;
