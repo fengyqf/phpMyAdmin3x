@@ -53,9 +53,9 @@ if (is_array($foreignData['disp_row'])) {
         $showall = '<input type="submit" name="foreign_navig" value="' . __('Show all') . '" />';
     }
 
-    $session_max_rows = $GLOBALS['cfg']['MaxRows'];
-    $pageNow = @floor($pos / $session_max_rows) + 1;
-    $nbTotalPage = @ceil($foreignData['the_total'] / $session_max_rows);
+    $session_max_rows = max(1, (int)$GLOBALS['cfg']['MaxRows']);
+    $pageNow = floor($pos / $session_max_rows) + 1;
+    $nbTotalPage = ceil($foreignData['the_total'] / $session_max_rows);
 
     if ($foreignData['the_total'] > $GLOBALS['cfg']['MaxRows']) {
         $gotopage = PMA_pageselector(

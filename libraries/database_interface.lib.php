@@ -244,9 +244,9 @@ function PMA_DBI_convert_message($message)
 
     if (! empty($server_language) && isset($encodings[$server_language])) {
         if (function_exists('iconv')) {
-            if ((@stristr(PHP_OS, 'AIX'))
-                && (@strcasecmp(ICONV_IMPL, 'unknown') == 0)
-                && (@strcasecmp(ICONV_VERSION, 'unknown') == 0)
+            if (stristr(PHP_OS, 'AIX')
+                && defined('ICONV_IMPL') && strcasecmp(ICONV_IMPL, 'unknown') == 0
+                && defined('ICONV_VERSION') && strcasecmp(ICONV_VERSION, 'unknown') == 0
             ) {
                 include_once './libraries/iconv_wrapper.lib.php';
                 $message = PMA_aix_iconv_wrapper(
