@@ -243,8 +243,14 @@ class Advisor
         $err = 0;
 
         ob_start();
-        eval('$value = '.$expr.';');
-        $err = ob_get_contents();
+        try {
+            eval('$value = '.$expr.';');
+            $err = ob_get_contents();
+        } catch (Error $e) {
+            $err = $e->getMessage() . ob_get_contents();
+        } catch (Exception $e) {
+            $err = $e->getMessage() . ob_get_contents();
+        }
         ob_end_clean();
         if ($err) {
             throw new Exception(

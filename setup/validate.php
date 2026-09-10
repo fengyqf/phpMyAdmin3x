@@ -17,7 +17,7 @@ require './libraries/config/validate.lib.php';
 header('Content-type: application/json');
 
 $vids = explode(',', filter_input(INPUT_POST, 'id'));
-$values = json_decode(filter_input(INPUT_POST, 'values'));
+$values = json_decode((string)filter_input(INPUT_POST, 'values'));
 if (!($values instanceof stdClass)) {
     die(__('Wrong data'));
 }
