@@ -191,6 +191,17 @@ function test_db_connection($extension, $connect_type, $host, $port, $socket, $u
     $socket = empty($socket) || $connect_type == 'tcp' ? null : $socket;
     $port = empty($port) || $connect_type == 'socket' ? null : ':' . $port;
     $error = null;
+
+    if ($extension == 'drizzle' && !function_exists('drizzle_create')) {
+        return array($error_key => __('Could not initialize Drizzle connection library'));
+    } elseif ($extension == 'mysql' && !function_exists('mysql_connect')) {
+        return array($error_key => __('Could not connect to MySQL server'));
+    } elseif ($extension == 'mysqli' && !function_exists('mysqli_connect')) {
+        return array($error_key => __('Could not connect to MySQL server'));
+    } elseif ($extension != 'drizzle' && $extension != 'mysql' && $extension != 'mysqli') {
+        return array($error_key => __('Unknown extension: ') . $extension);
+    }
+
     if ($extension == 'drizzle') {
         while (1) {
             $drizzle = @drizzle_create();
@@ -224,7 +235,7 @@ function test_db_connection($extension, $connect_type, $host, $port, $socket, $u
         } else {
             mysql_close($conn);
         }
-    } else {
+    } else if ($extension == 'mysqli') {
         $conn = @mysqli_connect($host, $user, $pass, null, $port, $socket);
         if (!$conn) {
             $error = __('Could not connect to MySQL server');

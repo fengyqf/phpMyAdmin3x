@@ -316,8 +316,9 @@ function PMA_displayTableNavigation($pos_next, $pos_prev, $sql_query, $id_for_di
     //page redirection
     // (unless we are showing all records)
     if ('all' != $_SESSION['tmp_user_values']['max_rows']) { //if1
-        $pageNow = @floor($_SESSION['tmp_user_values']['pos'] / $_SESSION['tmp_user_values']['max_rows']) + 1;
-        $nbTotalPage = @ceil($unlim_num_rows / $_SESSION['tmp_user_values']['max_rows']);
+        $safe_max_rows = max(1, (int)$_SESSION['tmp_user_values']['max_rows']);
+        $pageNow = floor($_SESSION['tmp_user_values']['pos'] / $safe_max_rows) + 1;
+        $nbTotalPage = ceil($unlim_num_rows / $safe_max_rows);
 
         if ($nbTotalPage > 1) { //if2
        ?>
@@ -1516,7 +1517,7 @@ function PMA_displayTableBody(&$dt_result, &$is_display, $map, $analyzed_sql)
                            // hide per <td> only if the display direction is not vertical
                            $_SESSION['tmp_user_values']['disp_direction'] != 'vertical') ? 'hide' : '';
             // handle datetime-related class, for grid editing
-            if (substr($meta->type, 0, 9) == 'timestamp' || $meta->type == 'datetime') {
+            if (substr((string)($meta->type), 0, 9) == 'timestamp' || $meta->type == 'datetime') {
                 $field_type_class = 'datetimefield';
             } else if ($meta->type == 'date') {
                 $field_type_class = 'datefield';

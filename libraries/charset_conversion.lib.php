@@ -18,7 +18,7 @@ define('PMA_CHARSET_MBSTRING', 4);
 // Finally detect which function we will use:
 if ($cfg['RecodingEngine'] == 'iconv') {
     if (@function_exists('iconv')) {
-        if ((@stristr(PHP_OS, 'AIX')) && (@strcasecmp(ICONV_IMPL, 'unknown') == 0) && (@strcasecmp(ICONV_VERSION, 'unknown') == 0)) {
+        if (stristr(PHP_OS, 'AIX') && defined('ICONV_IMPL') && strcasecmp(ICONV_IMPL, 'unknown') == 0 && defined('ICONV_VERSION') && strcasecmp(ICONV_VERSION, 'unknown') == 0) {
             $PMA_recoding_engine = PMA_CHARSET_ICONV_AIX;
         } else {
             $PMA_recoding_engine = PMA_CHARSET_ICONV;
@@ -43,7 +43,7 @@ if ($cfg['RecodingEngine'] == 'iconv') {
     }
 } elseif ($cfg['RecodingEngine'] == 'auto') {
     if (@function_exists('iconv')) {
-        if ((@stristr(PHP_OS, 'AIX')) && (@strcasecmp(ICONV_IMPL, 'unknown') == 0) && (@strcasecmp(ICONV_VERSION, 'unknown') == 0)) {
+        if (stristr(PHP_OS, 'AIX') && defined('ICONV_IMPL') && strcasecmp(ICONV_IMPL, 'unknown') == 0 && defined('ICONV_VERSION') && strcasecmp(ICONV_VERSION, 'unknown') == 0) {
             $PMA_recoding_engine = PMA_CHARSET_ICONV_AIX;
         } else {
             $PMA_recoding_engine = PMA_CHARSET_ICONV;
