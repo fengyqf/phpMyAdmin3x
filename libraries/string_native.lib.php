@@ -66,7 +66,7 @@ function PMA_strtolower($string)
 
 function PMA_ord($string)
 {
-    return ord($string);
+    return ord((string)$string[0]);
 }
 
 ?>

@@ -67,7 +67,11 @@ function PMA_strtolower($string)
 
 function PMA_ord($string)
 {
-    return mb_ord($string);
+    if (function_exists('mb_ord')) {
+        return mb_ord($string);
+    }
+    // Fallback for PHP < 7.2
+    return ord((string)$string[0]);
 }
 
 ?>

@@ -26,7 +26,7 @@ if (ini_get('allow_url_fopen')) {
 
 // check if the retrieved version.json file is a valid json object,
 // before encoding it again and sending it to the browser
-$data = json_decode($response);
+$data = json_decode((string)$response);
 if (is_object($data) && strlen($data->version) && strlen($data->date)) {
     echo json_encode(
         array('version' => $data->version, 'date' => $data->date)
