@@ -626,6 +626,14 @@ if (isset($GLOBALS['show_as_php']) || ! empty($GLOBALS['validatequery'])) {
             // "j u s t   b r o w s i n g"
             $unlim_num_rows = PMA_Table::countRecords($db, $table);
 
+        } elseif ((PMA_MYSQL_SERVER_TYPE == 'MySQL' && PMA_MYSQL_INT_VERSION >= 80017)
+            || (PMA_MYSQL_SERVER_TYPE == 'MariaDB' && PMA_MYSQL_INT_VERSION >= 100400)
+        ) { // n o t   " j u s t   b r o w s i n g " // for recent MySQL/Mariadb
+            // SQL_CALC_FOUND_ROWS is deprecated since MySQL 8.0.17 and removed in 8.4.0.
+            // For newer servers, we wrap the original query into a COUNT(*) subquery instead.
+            $count_query = 'SELECT COUNT(*) FROM (' . rtrim($sql_query, ';') . ') AS `pma_count`';
+            $unlim_num_rows = PMA_DBI_fetch_value($count_query);
+
         } else { // n o t   " j u s t   b r o w s i n g "
 
             // add select expression after the SQL_CALC_FOUND_ROWS
