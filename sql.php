@@ -392,6 +392,11 @@ $is_explain = $is_count = $is_export = $is_delete = $is_insert = $is_affected = 
 if ($is_select) { // see line 141
     $is_group = preg_match('@(GROUP[[:space:]]+BY|HAVING|SELECT[[:space:]]+DISTINCT)[[:space:]]+@i', $sql_query);
     $is_func =  ! $is_group && (preg_match('@[[:space:]]+(SUM|AVG|STD|STDDEV|MIN|MAX|BIT_OR|BIT_AND)\s*\(@i', $sql_query));
+    if ($is_cte_select) {
+        // Ignore aggregates inside CTE definitions, but retain the original
+        // no-LIMIT behaviour for aggregate functions in the outer query.
+        $is_func = ! $is_group && $is_cte_main_query_aggregate;
+    }
     $is_count = ! $is_group && (preg_match('@^SELECT[[:space:]]+COUNT\((.*\.+)?.*\)@i', $sql_query));
     $is_export   = (preg_match('@[[:space:]]+INTO[[:space:]]+OUTFILE[[:space:]]+@i', $sql_query));
     $is_analyse  = (preg_match('@[[:space:]]+PROCEDURE[[:space:]]+ANALYSE@i', $sql_query));
@@ -464,15 +469,21 @@ if ($GLOBALS['cfg']['RememberSorting']
 // Do append a "LIMIT" clause?
 if (($_SESSION['tmp_user_values']['max_rows'] != 'all')
     && ! ($is_count || $is_export || $is_func || $is_analyse)
-    && isset($analyzed_sql[0]['queryflags']['select_from'])
+    && ($is_cte_select || isset($analyzed_sql[0]['queryflags']['select_from']))
     && ! isset($analyzed_sql[0]['queryflags']['offset'])
     && empty($analyzed_sql[0]['limit_clause'])
 ) {
     $sql_limit_to_append = ' LIMIT ' . $_SESSION['tmp_user_values']['pos']
         . ', ' . $_SESSION['tmp_user_values']['max_rows'] . " ";
 
-    $full_sql_query  = $analyzed_sql[0]['section_before_limit'] . "\n"
-        . $sql_limit_to_append . $analyzed_sql[0]['section_after_limit'];
+    if ($is_cte_select) {
+        // The legacy analyzer cannot safely split a CTE into sections. Keep
+        // the original query intact and append LIMIT to its outer SELECT.
+        $full_sql_query = fsfx__append_cte_limit($sql_query, $sql_limit_to_append);
+    } else {
+        $full_sql_query  = $analyzed_sql[0]['section_before_limit'] . "\n"
+            . $sql_limit_to_append . $analyzed_sql[0]['section_after_limit'];
+    }
     /**
      * @todo pretty printing of this modified query
      */
@@ -481,7 +492,9 @@ if (($_SESSION['tmp_user_values']['max_rows'] != 'all')
         // a section_after_limit, we now have to analyze $display_query
         // to display it correctly
 
-        if (! empty($analyzed_sql[0]['section_after_limit'])
+        if ($is_cte_select) {
+            $display_query = fsfx__append_cte_limit($display_query, $sql_limit_to_append);
+        } elseif (! empty($analyzed_sql[0]['section_after_limit'])
             && trim($analyzed_sql[0]['section_after_limit']) != ';'
         ) {
             $analyzed_display_query = PMA_SQP_analyze(PMA_SQP_parse($display_query));
@@ -619,6 +632,7 @@ if (isset($GLOBALS['show_as_php']) || ! empty($GLOBALS['validatequery'])) {
             && ! isset($analyzed_sql[0]['queryflags']['union'])
             && ! isset($analyzed_sql[0]['queryflags']['distinct'])
             && ! isset($analyzed_sql[0]['table_ref'][1]['table_name'])
+            && ! $is_cte_select
             && (empty($analyzed_sql[0]['where_clause']) || $analyzed_sql[0]['where_clause'] == '1 ')
             && ! isset($find_real_end)
         ) {
@@ -626,12 +640,24 @@ if (isset($GLOBALS['show_as_php']) || ! empty($GLOBALS['validatequery'])) {
             // "j u s t   b r o w s i n g"
             $unlim_num_rows = PMA_Table::countRecords($db, $table);
 
-        } elseif ((PMA_MYSQL_SERVER_TYPE == 'MySQL' && PMA_MYSQL_INT_VERSION >= 80017)
+        } elseif ($is_cte_select
+            || (PMA_MYSQL_SERVER_TYPE == 'MySQL' && PMA_MYSQL_INT_VERSION >= 80017)
             || (PMA_MYSQL_SERVER_TYPE == 'MariaDB' && PMA_MYSQL_INT_VERSION >= 100400)
         ) { // n o t   " j u s t   b r o w s i n g " // for recent MySQL/Mariadb
             // SQL_CALC_FOUND_ROWS is deprecated since MySQL 8.0.17 and removed in 8.4.0.
-            // For newer servers, we wrap the original query into a COUNT(*) subquery instead.
-            $count_query = 'SELECT COUNT(*) FROM (' . rtrim($sql_query, ';') . ') AS `pma_count`';
+            // For newer servers, and for CTEs which the legacy parser cannot
+            // split safely, wrap the original query into a COUNT(*) subquery.
+            if ($is_cte_select) {
+                $count_query_body = fsfx__get_cte_query_body(
+                    $sql_query,
+                    $count_trailing_comments,
+                    $count_has_semicolon
+                );
+            } else {
+                $count_query_body = rtrim(rtrim($sql_query), ';');
+            }
+            $count_query = "SELECT COUNT(*) FROM (\n" . $count_query_body
+                . "\n) AS `pma_count`";
             $unlim_num_rows = PMA_DBI_fetch_value($count_query);
 
         } else { // n o t   " j u s t   b r o w s i n g "
