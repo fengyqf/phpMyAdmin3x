@@ -45,6 +45,11 @@ $fsfx_tabs=array(
         'sql_2'=>'SELECT * FROM `ALL_PLUGINS`',
     ),
 );
+// information_schema.ALL_PLUGINS and "SHOW PLUGINS SONAME" are MariaDB-only features.
+// Remove the "All Plugin" tab for MySQL to prevent table-not-found errors.
+if (PMA_MYSQL_SERVER_TYPE == 'MySQL') {
+    unset($fsfx_tabs['all_plugin']);
+}
 // $optab + $engine/plugin/soname (operate tab, detail name)
 if(isset($_REQUEST['optab']) && array_key_exists( $_REQUEST['optab'], $fsfx_tabs)){
     $optab=$_REQUEST['optab'];

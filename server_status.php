@@ -367,7 +367,12 @@ if (isset($_REQUEST['ajax_request']) && $_REQUEST['ajax_request'] == true) {
         }
 
         // Do not cache query
-        $query = preg_replace('/^(\s*SELECT)/i', '\\1 SQL_NO_CACHE', $_REQUEST['query']);
+        // SQL_NO_CACHE was removed in MySQL 8.0.19 (deprecated since 8.0.3);
+        if (PMA_MYSQL_SERVER_TYPE != 'MySQL' || PMA_MYSQL_INT_VERSION < 80003) {
+            $query = preg_replace('/^(\s*SELECT)/i', '\\1 SQL_NO_CACHE', $_REQUEST['query']);
+        } else {
+            $query = $_REQUEST['query'];
+        }
 
         $result = PMA_DBI_try_query($query);
         $return['affectedRows'] = $GLOBALS['cached_affected_rows'];
