@@ -614,11 +614,15 @@ class PMA_Config
         }
 
         // save connection collation
+        $default_collation = (defined('PMA_MYSQL_INT_VERSION') && PMA_MYSQL_INT_VERSION > 50503)
+            ? 'utf8mb4_general_ci'
+            : 'utf8_general_ci';
+
         if (isset($_COOKIE['pma_collation_connection'])
             || isset($_POST['collation_connection'])
         ) {
             if ((! isset($config_data['collation_connection'])
-                && $GLOBALS['collation_connection'] != 'utf8_general_ci')
+                && $GLOBALS['collation_connection'] != $default_collation)
                 || isset($config_data['collation_connection'])
                 && $GLOBALS['collation_connection']
                     != $config_data['collation_connection']
@@ -627,7 +631,7 @@ class PMA_Config
                     null,
                     'collation_connection',
                     $GLOBALS['collation_connection'],
-                    'utf8_general_ci'
+                    $default_collation
                 );
             }
         } else {
