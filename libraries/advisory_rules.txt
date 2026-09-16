@@ -133,8 +133,18 @@ rule 'MySQL Architecture'
 
 #
 # Query cache
+# Note: Query Cache was removed in MySQL 8.0 and MariaDB 11.0.
+# All rules in this section are guarded by PMA_MYSQL_INT_VERSION < 80000 (MySQL)
+# or the variable existence check. The 'Query cache disabled' rule gates the rest.
 
-rule 'Query caching method' [!fired('Query cache disabled')]
+rule 'Query cache disabled' [PMA_MYSQL_INT_VERSION < 80000 && !PMA_DRIZZLE]
+	query_cache_size
+	value == 0
+	Query cache is disabled.
+	The query cache can be enabled by setting {query_cache_size} to a value larger than 0 and setting {query_cache_type} to 'ON'. Bear in mind that the query cache is known to significantly decrease performance on multi-core machines, so this may or may not be an improvement in your specific case.
+	query_cache_size is 0
+
+rule 'Query caching method' [PMA_MYSQL_INT_VERSION < 80000 && !PMA_DRIZZLE && !fired('Query cache disabled')]
 	Questions / Uptime
 	value > 100
 	Suboptimal caching method.
@@ -217,14 +227,18 @@ rule 'Temp disk rate'
 
 #
 # MyISAM index cache
-rule 'MyISAM key buffer size' [!PMA_DRIZZLE]
+# Note: MySQL 9.0+ is removing MyISAM support. key_buffer_size and related
+# status variables (Key_blocks_used, Key_blocks_unused, key_cache_block_size,
+# Key_reads, Key_read_requests) will disappear, causing eval() crashes.
+# Guard all MyISAM rules with PMA_MYSQL_INT_VERSION < 90000.
+rule 'MyISAM key buffer size' [!PMA_DRIZZLE && PMA_MYSQL_INT_VERSION < 90000]
 	key_buffer_size
 	value == 0
 	Key buffer is not initialized. No MyISAM indexes will be cached.
 	Set {key_buffer_size} depending on the size of your MyISAM indexes. 64M is a good start.
 	key_buffer_size is 0
 
-rule 'Max % MyISAM key buffer ever used' [!PMA_DRIZZLE && key_buffer_size > 0]
+rule 'Max % MyISAM key buffer ever used' [!PMA_DRIZZLE && PMA_MYSQL_INT_VERSION < 90000 && key_buffer_size > 0]
 	Key_blocks_used * key_cache_block_size / key_buffer_size * 100
 	value < 95
 	MyISAM key buffer (index cache) % used is low.
@@ -232,14 +246,14 @@ rule 'Max % MyISAM key buffer ever used' [!PMA_DRIZZLE && key_buffer_size > 0]
 	max % MyISAM key buffer ever used: %s%, this value should be above 95% | round(value,1)
 
 # Don't fire if above rule fired - we don't need the same advice twice
-rule 'Percentage of MyISAM key buffer used' [!PMA_DRIZZLE && key_buffer_size > 0 && !fired('max % MyISAM key buffer ever used')]
+rule 'Percentage of MyISAM key buffer used' [!PMA_DRIZZLE && PMA_MYSQL_INT_VERSION < 90000 && key_buffer_size > 0 && !fired('max % MyISAM key buffer ever used')]
 	( 1 - Key_blocks_unused * key_cache_block_size / key_buffer_size) * 100
 	value < 95
 	MyISAM key buffer (index cache) % used is low.
 	You may need to decrease the size of {key_buffer_size}, re-examine your tables to see if indexes have been removed, or examine queries and expectations about what indexes are being used.
 	% MyISAM key buffer used: %s%, this value should be above 95% | round(value,1)
 
-rule 'Percentage of index reads from memory' [!PMA_DRIZZLE && Key_read_requests > 0]
+rule 'Percentage of index reads from memory' [!PMA_DRIZZLE && PMA_MYSQL_INT_VERSION < 90000 && Key_read_requests > 0]
 	100 - (Key_reads / Key_read_requests * 100)
 	value < 95
 	The % of indexes that use the MyISAM key buffer is low.
