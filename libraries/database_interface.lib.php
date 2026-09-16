@@ -1349,19 +1349,49 @@ function PMA_DBI_postConnect($link, $is_controluser = false)
 
     // Skip charsets for Drizzle
     if (!PMA_DRIZZLE) {
-        if (! empty($GLOBALS['collation_connection'])) {
-            PMA_DBI_query("SET CHARACTER SET 'utf8';", $link, PMA_DBI_QUERY_STORE);
+        if (PMA_MYSQL_INT_VERSION > 50503) {
+            $default_charset = 'utf8mb4';
+            $default_collation = 'utf8mb4_general_ci';
+        } else {
+            $default_charset = 'utf8';
+            $default_collation = 'utf8_general_ci';
+        }
+
+        // Determine target collation (respecting cookie/config/POST already in $GLOBALS['collation_connection'])
+        $target_collation = !empty($GLOBALS['collation_connection'])
+            ? $GLOBALS['collation_connection']
+            : $default_collation;
+
+        // Smoothly migrate ancient legacy default utf8_general_ci to utf8mb4_general_ci
+        if ($default_charset === 'utf8mb4' && $target_collation === 'utf8_general_ci') {
+            $target_collation = 'utf8mb4_general_ci';
+            if (isset($_COOKIE['pma_collation_connection']) && $_COOKIE['pma_collation_connection'] === 'utf8_general_ci'
+                && isset($GLOBALS['PMA_Config'])
+            ) {
+                $GLOBALS['PMA_Config']->setCookie('pma_collation_connection', 'utf8mb4_general_ci');
+            }
+        } elseif ($default_charset === 'utf8' && strpos($target_collation, 'utf8mb4_') === 0) {
+            $target_collation = 'utf8_' . substr($target_collation, 8);
+        }
+
+        if (!empty($target_collation) && $target_collation !== $default_collation) {
+            PMA_DBI_query("SET NAMES '" . $default_charset . "';", $link, PMA_DBI_QUERY_STORE);
             PMA_DBI_query(
-                "SET collation_connection = '" . PMA_sqlAddSlashes($GLOBALS['collation_connection']) . "';",
+                "SET collation_connection = '" . PMA_sqlAddSlashes($target_collation) . "';",
                 $link,
                 PMA_DBI_QUERY_STORE
             );
         } else {
             PMA_DBI_query(
-                "SET NAMES 'utf8' COLLATE 'utf8_general_ci';",
+                sprintf("SET NAMES '%s' COLLATE '%s';", $default_charset, $default_collation),
                 $link,
                 PMA_DBI_QUERY_STORE
             );
+        }
+
+        if (!$is_controluser) {
+            $GLOBALS['charset_connection'] = $default_charset;
+            $GLOBALS['collation_connection'] = $target_collation;
         }
     }
 
