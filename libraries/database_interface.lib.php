@@ -1349,6 +1349,7 @@ function PMA_DBI_postConnect($link, $is_controluser = false)
 
     // Skip charsets for Drizzle
     if (!PMA_DRIZZLE) {
+        // MySQL 5.5.3+ (50503) introduced full 4-byte utf8mb4; earlier versions only support 3-byte utf8
         if (PMA_MYSQL_INT_VERSION > 50503) {
             $default_charset = 'utf8mb4';
             $default_collation = 'utf8mb4_general_ci';
@@ -1362,7 +1363,7 @@ function PMA_DBI_postConnect($link, $is_controluser = false)
             ? $GLOBALS['collation_connection']
             : $default_collation;
 
-        // Smoothly migrate ancient legacy default utf8_general_ci to utf8mb4_general_ci
+        // Smoothly migrate legacy default utf8_general_ci to utf8mb4; update cookie in-place to prevent repeated reversion
         if ($default_charset === 'utf8mb4' && $target_collation === 'utf8_general_ci') {
             $target_collation = 'utf8mb4_general_ci';
             if (isset($_COOKIE['pma_collation_connection']) && $_COOKIE['pma_collation_connection'] === 'utf8_general_ci'
@@ -1371,9 +1372,11 @@ function PMA_DBI_postConnect($link, $is_controluser = false)
                 $GLOBALS['PMA_Config']->setCookie('pma_collation_connection', 'utf8mb4_general_ci');
             }
         } elseif ($default_charset === 'utf8' && strpos($target_collation, 'utf8mb4_') === 0) {
+            // Downgrade utf8mb4 collation to utf8 when switching to legacy MySQL (< 5.5.3) to avoid fatal SQL error
             $target_collation = 'utf8_' . substr($target_collation, 8);
         }
 
+        // Custom collation may belong to another charset (e.g. latin1, gbk, utf8); SET NAMES with mismatched COLLATE triggers MySQL Error 1253
         if (!empty($target_collation) && $target_collation !== $default_collation) {
             PMA_DBI_query("SET NAMES '" . $default_charset . "';", $link, PMA_DBI_QUERY_STORE);
             PMA_DBI_query(
@@ -1382,6 +1385,7 @@ function PMA_DBI_postConnect($link, $is_controluser = false)
                 PMA_DBI_QUERY_STORE
             );
         } else {
+            // Default collation belongs to default charset; execute atomic 1-query fast path
             PMA_DBI_query(
                 sprintf("SET NAMES '%s' COLLATE '%s';", $default_charset, $default_collation),
                 $link,
@@ -1389,6 +1393,7 @@ function PMA_DBI_postConnect($link, $is_controluser = false)
             );
         }
 
+        // controluser needs SET NAMES to prevent latin1 fallback on pma__* tables, but must not overwrite session globals
         if (!$is_controluser) {
             $GLOBALS['charset_connection'] = $default_charset;
             $GLOBALS['collation_connection'] = $target_collation;

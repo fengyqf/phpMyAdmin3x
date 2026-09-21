@@ -614,6 +614,7 @@ class PMA_Config
         }
 
         // save connection collation
+        // Dynamic default prevents modern MySQL's utf8mb4_general_ci from being misidentified and persisted as a custom user preference
         $default_collation = (defined('PMA_MYSQL_INT_VERSION') && PMA_MYSQL_INT_VERSION > 50503)
             ? 'utf8mb4_general_ci'
             : 'utf8_general_ci';

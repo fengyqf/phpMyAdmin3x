@@ -34,9 +34,9 @@ if(PMA_MYSQL_INT_VERSION >= 50122 && function_exists('getCurrentAuthenticationPl
             $GLOBALS['username'],
             $GLOBALS['hostname']
         );
-    $buff=getHtmlForAuthPluginsDropdown($orig_auth_plugin, $mode=$mode, $versions = 'new');
+    $buff = getHtmlForAuthPluginsDropdown($orig_auth_plugin, 'change_pw', 'new');
     $buff='<div class="item">' . "\n"
-       . '<label for="authentication_plugin">Auth-Plugin:</label>'."\n"
+       . '<label for="select_authentication_plugin_cp">Auth-Plugin:</label>'."\n"
        . $buff . "\n"
        . '<span class="options">&nbsp;</span>' . "\n"
        . '</div>' . "\n";
@@ -62,6 +62,15 @@ if(PMA_MYSQL_INT_VERSION >= 50122 && function_exists('getCurrentAuthenticationPl
                 <input type="password" name="pma_pw2" id="text_pma_pw2" size="10" class="textfield" <?php echo $chg_evt_handler; ?>="nopass[1].checked = true" />
             </td>
         </tr>
+<?php
+$supports_old_passwords = true;
+if ((PMA_MYSQL_SERVER_TYPE === 'MySQL' || PMA_MYSQL_SERVER_TYPE === 'Percona') && PMA_MYSQL_INT_VERSION >= 50705) {
+    $supports_old_passwords = false;
+} elseif (PMA_MYSQL_SERVER_TYPE === 'MariaDB' && PMA_MYSQL_INT_VERSION >= 100100) {
+    $supports_old_passwords = false;
+}
+if ($supports_old_passwords) {
+?>
         <tr>
             <td>
             <?php echo __('Password Hashing'); ?>:
@@ -82,6 +91,9 @@ if(PMA_MYSQL_INT_VERSION >= 50122 && function_exists('getCurrentAuthenticationPl
             </label>
         </td>
         </tr>
+<?php
+}
+?>
         </table>
     </fieldset>
     <fieldset id="fieldset_change_password_footer" class="tblFooters">

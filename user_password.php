@@ -69,14 +69,28 @@ if (isset($_REQUEST['nopass'])) {
         $_url_params = array();
 
         $err_url          = 'user_password.php' . PMA_generate_common_url($_url_params);
-        if (PMA_isValid($_REQUEST['pw_hash'], 'identical', 'old')) {
-            $hashing_function = 'OLD_PASSWORD';
-        } else {
-            $hashing_function = 'PASSWORD';
-        }
+        $isMySQL       = (PMA_MYSQL_SERVER_TYPE === 'MySQL' || PMA_MYSQL_SERVER_TYPE === 'Percona');
+        $isModernMySQL = $isMySQL && PMA_MYSQL_INT_VERSION >= 50706;
 
-        $sql_query        = 'SET password = ' . (($password == '') ? '\'\'' : $hashing_function . '(\'***\')');
-        $local_query      = 'SET password = ' . (($password == '') ? '\'\'' : $hashing_function . '(\'' . PMA_sqlAddSlashes($password) . '\')');
+        // Note on MariaDB vs modern MySQL password changes:
+        // 1. MySQL 5.7.6+ deprecated PASSWORD() and 8.0 removed it; unprivileged users can use ALTER USER USER().
+        // 2. MariaDB requires the global CREATE USER privilege for ANY ALTER USER (even with CURRENT_USER()).
+        //    Regular unprivileged users MUST use SET PASSWORD = PASSWORD('...'), which is standard across all MariaDB versions.
+        // 3. Regular users cannot alter their authentication plugin; in modern MariaDB (10.4+),
+        //    SET PASSWORD automatically delegates hashing to the account's existing plugin (e.g. ed25519).
+        if ($isModernMySQL) {
+            $sql_query   = "ALTER USER USER() IDENTIFIED BY " . ($password === '' ? "''" : "'***'");
+            $local_query = "ALTER USER USER() IDENTIFIED BY '" . PMA_sqlAddSlashes($password) . "'";
+        } else {
+            if (PMA_isValid($_REQUEST['pw_hash'], 'identical', 'old')) {
+                $hashing_function = 'OLD_PASSWORD';
+            } else {
+                $hashing_function = 'PASSWORD';
+            }
+
+            $sql_query   = 'SET password = ' . (($password == '') ? '\'\'' : $hashing_function . '(\'***\')');
+            $local_query = 'SET password = ' . (($password == '') ? '\'\'' : $hashing_function . '(\'' . PMA_sqlAddSlashes($password) . '\')');
+        }
         $result           = @PMA_DBI_try_query($local_query)
             or PMA_mysqlDie(PMA_DBI_getError(), $sql_query, false, $err_url);
 
