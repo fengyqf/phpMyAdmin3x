@@ -908,7 +908,7 @@ function PMA_displayLoginInformationFields($mode = 'new')
                 isset($GLOBALS['username']) ? $GLOBALS['username'] : null,
                 isset($GLOBALS['hostname']) ? $GLOBALS['hostname'] : null
             );
-        $buff=getHtmlForAuthPluginsDropdown($orig_auth_plugin, $mode=$mode, $versions = 'new');
+        $buff = getHtmlForAuthPluginsDropdown($orig_auth_plugin, $mode, 'new');
         $buff='<div class="item">' . "\n"
            . '<label for="select_authentication_plugin">Auth-Plugin:</label>'."\n"
            . $buff . "\n"
