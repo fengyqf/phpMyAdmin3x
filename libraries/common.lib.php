@@ -3902,7 +3902,7 @@ function fsfx_var_dump($varname)
     }
 
     $up=$url."&fxvpath=";
-    $buff.= "<li>FS Dump <a href='".$up."'><b>".$varname."</b></a> (<dfn title='estimate size by serialized string length, real memory useage will be much larger. same as later.'>".fsfx_h_size(strlen(serialize($value))).'</dfn>) ';
+    $buff.= "<li>FS Dump <a href=\"".htmlspecialchars($up, ENT_QUOTES)."\"><b>".htmlspecialchars($varname, ENT_QUOTES)."</b></a> (<dfn title=\"estimate size by serialized string length, real memory useage will be much larger. same as later.\">".fsfx_h_size(strlen(serialize($value))).'</dfn>) ';
     if(!isset($_GET['fxvpath'])){
         return $buff;
     }
@@ -3914,8 +3914,8 @@ function fsfx_var_dump($varname)
             }elseif(is_object($value)){
                 $value=$value->$p;
             }
-            $up .= ("/".$p);
-            $buff.= "/<a href='".$up."'>".$p."</a>(".fsfx_h_size(strlen(serialize($value))).') ';
+            $up .= ("/".rawurlencode($p));
+            $buff.= "/<a href=\"".htmlspecialchars($up, ENT_QUOTES)."\">".htmlspecialchars($p, ENT_QUOTES)."</a>(".fsfx_h_size(strlen(serialize($value))).') ';
         }
     }
     $buff.= "</li>";
@@ -3929,9 +3929,10 @@ function fsfx_var_dump($varname)
             }else{
                 $type=gettype($v);
             }
-            $buff.= "<li>  - [<a href='".$url."&fxvpath=".(isset($_GET['fxvpath'])? urlencode($_GET['fxvpath']) : '').'/'.urlencode($k)."'>".$k."</a>]{".$type."}: ";
+            $target_fxvpath = (isset($_GET['fxvpath']) && strlen($_GET['fxvpath']) > 0 ? rtrim($_GET['fxvpath'], '/') : '') . '/' . rawurlencode($k);
+            $buff.= "<li>  - [<a href=\"".htmlspecialchars($url."&fxvpath=".$target_fxvpath, ENT_QUOTES)."\">".htmlspecialchars($k, ENT_QUOTES)."</a>]{".$type."}: ";
             if(is_string($v)||is_int($v)||is_float($v)||is_bool($v)||is_null($v) ){
-                $buff.=print_r($v,true);
+                $buff.=htmlspecialchars(print_r($v,true), ENT_QUOTES);
             }else{
                 $buff.=fsfx_h_size($size);
             }
@@ -3940,7 +3941,7 @@ function fsfx_var_dump($varname)
     }else{
         $size=strlen(serialize($value));
         if($size < 10240){
-            $buff.= "<li>  * {".gettype($value)."}: ".print_r($value,true)."</li>";
+            $buff.= "<li>  * {".gettype($value)."}: ".htmlspecialchars(print_r($value,true), ENT_QUOTES)."</li>";
         }else{
             $buff.= "<li>  * {".gettype($value)."}: ".fsfx_h_size($size)."</li>";
         }
