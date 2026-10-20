@@ -421,6 +421,10 @@ class PMA_StorageEngine
      */
     static public function getPlugins($plugin_name=NULL,$all_plugin=false)
     {
+        // information_schema.PLUGINS was introduced in MySQL 5.1
+        if (PMA_MYSQL_INT_VERSION < 50100) {
+            return array();
+        }
         // information_schema.ALL_PLUGINS is MariaDB-only; fall back to PLUGINS on MySQL.
         if ($all_plugin && PMA_MYSQL_SERVER_TYPE == 'MySQL') {
             $all_plugin = false;
@@ -428,11 +432,13 @@ class PMA_StorageEngine
         $table=$all_plugin ? 'ALL_PLUGINS' : 'PLUGINS';
         $sql = "SELECT * FROM information_schema.{$table} ORDER BY PLUGIN_TYPE, PLUGIN_NAME";
         $result = PMA_DBI_fetch_result($sql);
+        if (! is_array($result)) {
+            return array();
+        }
         if($plugin_name){
             foreach($result as $row){
                 if($row['PLUGIN_NAME']==$plugin_name){
                     return $row;
-                    break;
                 }
             }
             return array();
