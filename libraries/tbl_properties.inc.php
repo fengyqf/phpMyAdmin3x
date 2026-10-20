@@ -150,8 +150,10 @@ if (isset($field_fulltext) && is_array($field_fulltext)) {
 
 // cache fields in array, for field position in table structure
 $fx_fields = array();
-foreach( (array) PMA_DBI_get_columns($db, $table, null, true) as $key => $value){
-    $fx_fields[$key]=$value['Field'];
+if (!empty($table)){
+    foreach( (array) PMA_DBI_get_columns($db, $table, null, true) as $key => $value){
+        $fx_fields[$key]=$value['Field'];
+    }
 }
 
 function getHtmlFieldsSelect($name,$fields,$check=NULL,$id=NULL){
@@ -161,7 +163,7 @@ function getHtmlFieldsSelect($name,$fields,$check=NULL,$id=NULL){
     $buff .='  <option value="-prev">Previous</option>'."\n";
     foreach($fields as $key => $value){
         $buff .= '  <option value="'.$key.'"'
-                .($check==$key ? ' selected="selected' : '')
+                .($check==$key ? ' selected="selected"' : '')
                 .'>AFTER `'.$value.'`</option>'."\n";
     }
     $buff .= '</select>'."\n";

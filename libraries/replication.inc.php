@@ -320,7 +320,7 @@ function PMA_replication_slave_change_master($user, $password, $host, $port, $po
     $out = PMA_DBI_try_query($sql, $link);
 
     if ($error        = PMA_DBI_getError()) {
-            PMA_mysqlDie($error, $full_sql_query, '', '');
+            PMA_mysqlDie($error, $log_sql, '', '');
     }
 
     if ($start) {

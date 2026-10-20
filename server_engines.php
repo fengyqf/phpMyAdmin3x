@@ -254,7 +254,7 @@ if ( $optab=='engine' && !$dtname ) {
     $tbfooter= '</tbody>' . "\n"  . '</table>' . "\n" . '</div>' . "\n";
     $odd_row = true;
     $lasttype='';
-    foreach (PMA_StorageEngine::getPlugins($plugin_name=$plugin_name,$all_plugin=$all_plugin) as $plugin => $details) {
+    foreach (PMA_StorageEngine::getPlugins($plugin_name, $all_plugin) as $plugin => $details) {
         if($lasttype!=$details['PLUGIN_TYPE']){
             if($lasttype!=''){
                 echo $tbfooter;
@@ -303,7 +303,7 @@ if ( $optab=='engine' && !$dtname ) {
 }elseif( ($optab=='plugin' || $optab=='all_plugin') && $dtname ){
     // display plugin details, infact all columns in the SHOW PLUGINS
     $all_plugin=($optab=='all_plugin') ? true : false;
-    $plugin_details=PMA_StorageEngine::getPlugins($plugin_name=$plugin,$all_plugin=$all_plugin);
+    $plugin_details = PMA_StorageEngine::getPlugins($plugin, $all_plugin);
 
 
     echo '<h2>' . "\n"

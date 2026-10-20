@@ -117,7 +117,8 @@ function PMA_generateCharsetDropdownBox($type = PMA_CSDROPDOWN_COLLATION,
     }
     $return_str .= '<option value=""></option>' . "\n";
     $found=false;
-    if(isset($GLOBALS['cfg']['pinned_collations']) && is_array($GLOBALS['cfg']['pinned_collations'])){
+    if($type == PMA_CSDROPDOWN_COLLATION && 
+        isset($GLOBALS['cfg']['pinned_collations']) && is_array($GLOBALS['cfg']['pinned_collations'])){
         $return_str .= '<optgroup label="Pinned" title="Pinned Collations">' . "\n";
         foreach ($GLOBALS['cfg']['pinned_collations'] as $current_collation) {
             $fsfx_pinned_collation_disable='';
