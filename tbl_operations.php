@@ -169,7 +169,14 @@ if (isset($_REQUEST['submitoptions'])) {
     if (count($table_alters) > 0) {
         $sql_query      = 'ALTER TABLE ' . PMA_backquote($GLOBALS['table']);
         $sql_query     .= "\r\n" . implode("\r\n", $table_alters);
-        $result        .= PMA_DBI_query($sql_query) ? true : false;
+        // Note: The original code used `$result .= PMA_DBI_query(...) ? true : false;`,
+        // which triggered undefined variable notices when unset and subtly degenerated into
+        // a logical OR (any step's success made $result truthy, masking failures).
+        // Improved to boolean AND accumulation. The query must be executed independently first;
+        // do not write as `$result = ... && PMA_DBI_query(...)` because `&&` would
+        // short-circuit and skip execution if a previous operation failed.
+        $query_result   = PMA_DBI_query($sql_query);
+        $result         = (isset($result) ? $result : true) && $query_result;
         $reread_info    = true;
         unset($table_alters);
         foreach (PMA_DBI_get_warnings() as $warning) {
@@ -179,7 +186,7 @@ if (isset($_REQUEST['submitoptions'])) {
             // should not be reported with a Level of Error, so here
             // I just ignore it. But there are other 1478 messages
             // that it's better to show.
-            if (! ($_REQUEST['new_tbl_type'] == 'MyISAM' && $warning['Code'] == '1478' && $warning['Level'] == 'Error')) {
+            if (! (! empty($_REQUEST['new_tbl_type']) && $_REQUEST['new_tbl_type'] == 'MyISAM' && $warning['Code'] == '1478' && $warning['Level'] == 'Error')) {
                 $warning_messages[] = $warning['Level'] . ': #' . $warning['Code']
                     . ' ' . $warning['Message'];
             }
@@ -208,7 +215,9 @@ if (isset($_REQUEST['submitoptions'])) {
         if(empty($sql_query)){
             $sql_query=$tmp;
         }
-        $result        .= PMA_DBI_query($tmp) ? true : false;
+        // Execute query independently first to avoid short-circuit skipping of subsequent queries
+        $query_result   = PMA_DBI_query($tmp);
+        $result         = (isset($result) ? $result : true) && $query_result;
         foreach (PMA_DBI_get_warnings() as $warning) {
             // In MariaDB 5.1.44, when altering a table from Maria to MyISAM
             // and if TRANSACTIONAL was set, the system reports an error;
@@ -216,7 +225,7 @@ if (isset($_REQUEST['submitoptions'])) {
             // should not be reported with a Level of Error, so here
             // I just ignore it. But there are other 1478 messages
             // that it's better to show.
-            if (! ($_REQUEST['new_tbl_type'] == 'MyISAM' && $warning['Code'] == '1478' && $warning['Level'] == 'Error')) {
+            if (! (! empty($_REQUEST['new_tbl_type']) && $_REQUEST['new_tbl_type'] == 'MyISAM' && $warning['Code'] == '1478' && $warning['Level'] == 'Error')) {
                 $warning_messages[] = $warning['Level'] . ': #' . $warning['Code']
                     . ' ' . $warning['Message'];
             }
