@@ -258,7 +258,6 @@ if ( $optab=='engine' && !$dtname ) {
         if($lasttype!=$details['PLUGIN_TYPE']){
             if($lasttype!=''){
                 echo $tbfooter;
-                echo '</div>'."\n";
             }
             echo '<div class="group"><h2>'.$details['PLUGIN_TYPE'].'</h2>'."\n";
             echo $tbheader;
