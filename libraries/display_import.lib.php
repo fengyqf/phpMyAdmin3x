@@ -238,9 +238,7 @@ if ($_SESSION[$SESSION_KEY]["handler"]!="noplugin") {
             // do not show the Skip dialog to avoid the risk of someone
             // entering a value here that would interfere with "skip"
             ?>
-        <input type="hidden" name="skip_queries" value="<?php echo PMA_pluginGetDefault('Import', 'skip_queries');?>" id="text_skip_queries" size="3" />
-            <a href="#" class="text_skip_queries_n1">0</a>
-            <a href="#" class="text_skip_queries_n1">1</a>
+        <input type="hidden" name="skip_queries" value="<?php echo PMA_pluginGetDefault('Import', 'skip_queries');?>" id="text_skip_queries" />
             <?php
         }
         ?>

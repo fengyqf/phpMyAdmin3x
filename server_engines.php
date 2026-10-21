@@ -94,16 +94,35 @@ unset($fsfx_buff,$fsfx_link,$fsfx_act1,$fsfx_act2);
 
 
 //install/uninstall plugin ...
-if(isset($_REQUEST['action'])){
-    if($_REQUEST['action']=='install' && isset($_REQUEST['plugin_name']) && isset($_REQUEST['library'])){
-        $act_plugin=$_REQUEST['plugin_name'];
-        $act_lib=$_REQUEST['library'];
-        $sql="INSTALL PLUGIN $act_plugin SONAME '$act_lib';";
-        PMA_DBI_query($sql);
-    }elseif($_REQUEST['action']=='uninstall' && isset($_REQUEST['plugin_name'])){
-        $act_plugin=$_REQUEST['plugin_name'];
-        $sql="UNINSTALL PLUGIN $act_plugin ;";
-        PMA_DBI_query($sql);
+if (isset($_REQUEST['action']) && PMA_isSuperuser()) {
+    if ($_REQUEST['action'] == 'install' && !empty($_REQUEST['plugin_name']) && !empty($_REQUEST['library'])) {
+        $act_plugin = trim($_REQUEST['plugin_name']);
+        $act_lib = trim($_REQUEST['library']);
+        if (preg_match('/^[a-zA-Z0-9_]+$/', $act_plugin) && preg_match('/^[a-zA-Z0-9_.-]+$/', $act_lib)) {
+            $sql = "INSTALL PLUGIN " . PMA_backquote($act_plugin) . " SONAME '" . PMA_sqlAddSlashes($act_lib) . "';";
+            $result = PMA_DBI_try_query($sql);
+            if ($result) {
+                $message = PMA_Message::success(__('Plugin %s has been installed.'));
+                $message->addParam($act_plugin);
+            } else {
+                $message = PMA_Message::rawError(PMA_DBI_getError());
+            }
+        }
+    } elseif ($_REQUEST['action'] == 'uninstall' && !empty($_REQUEST['plugin_name'])) {
+        $act_plugin = trim($_REQUEST['plugin_name']);
+        if (preg_match('/^[a-zA-Z0-9_]+$/', $act_plugin)) {
+            $sql = "UNINSTALL PLUGIN " . PMA_backquote($act_plugin) . ";";
+            $result = PMA_DBI_try_query($sql);
+            if ($result) {
+                $message = PMA_Message::success(__('Plugin %s has been uninstalled.'));
+                $message->addParam($act_plugin);
+            } else {
+                $message = PMA_Message::rawError(PMA_DBI_getError());
+            }
+        }
+    }
+    if (isset($message)) {
+        echo $message->getDisplay();
     }
 }
 
@@ -268,7 +287,7 @@ if ( $optab=='engine' && !$dtname ) {
                 $fsfx_plg_act.='<a href="./server_engines.php'.PMA_generate_common_url(
                     array('optab'=>$optab,'action' => 'uninstall'
                         ,'plugin_name'=> $details['PLUGIN_NAME'])
-                ).'">uninstall</a>';
+                ).'" onclick="return confirmLink(this, \'' . PMA_escapeJsString(sprintf(__('Are you sure you want to %s?'), 'UNINSTALL PLUGIN ' . $details['PLUGIN_NAME'])) . '\')">uninstall</a>';
             }elseif($details['PLUGIN_STATUS']=='NOT INSTALLED'){
                 $fsfx_plg_act.='<a href="./server_engines.php'.PMA_generate_common_url(
                     array('optab'=>$optab,'action' => 'install'
