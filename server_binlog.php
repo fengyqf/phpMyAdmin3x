@@ -115,7 +115,7 @@ if($bl_type=='RELAYLOG'){
     }
     $sql_query = "SHOW RELAYLOG{$chnl_a} EVENTS";
     $url_params['bl_type']=$bl_type;
-    $url_params['channel'] = $_GET["channel"];
+    $url_params['channel'] = isset($_GET["channel"]) ? $_GET["channel"] : '';
 }
 if ($fx_curr_log) {
     $sql_query .= ' IN \'' . PMA_sqlAddSlashes($fx_curr_log) . '\'';
