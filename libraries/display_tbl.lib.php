@@ -489,6 +489,14 @@ function PMA_fsfx_displayTableHeaders_sorting(&$is_display, $fields_cnt = 0, $an
         // generated query.
         $unsorted_sql_query = trim($unsorted_sql_query);
 
+        if (preg_match('@(.*)([[:space:]](LIMIT (.*)|PROCEDURE (.*)|FOR UPDATE|LOCK IN SHARE MODE))@is', $unsorted_sql_query, $my_reg)) {
+            $unsorted_sql_query_first_part = $my_reg[1];
+            $unsorted_sql_query_second_part = $my_reg[2];
+        } else {
+            $unsorted_sql_query_first_part = $unsorted_sql_query;
+            $unsorted_sql_query_second_part = '';
+        }
+
         // sorting by indexes, only if it makes sense (only one table ref)
         if (isset($analyzed_sql)
             && isset($analyzed_sql[0])
@@ -527,13 +535,6 @@ function PMA_fsfx_displayTableHeaders_sorting(&$is_display, $fields_cnt = 0, $an
                     $asc_sort = '`' . implode('` ASC, `', array_keys($index->getColumns())) . '` ASC';
                     $desc_sort = '`' . implode('` DESC, `', array_keys($index->getColumns())) . '` DESC';
                     $used_index = $used_index || $local_order == $asc_sort || $local_order == $desc_sort;
-                    if (preg_match('@(.*)([[:space:]](LIMIT (.*)|PROCEDURE (.*)|FOR UPDATE|LOCK IN SHARE MODE))@is', $unsorted_sql_query, $my_reg)) {
-                        $unsorted_sql_query_first_part = $my_reg[1];
-                        $unsorted_sql_query_second_part = $my_reg[2];
-                    } else {
-                        $unsorted_sql_query_first_part = $unsorted_sql_query;
-                        $unsorted_sql_query_second_part = '';
-                    }
                     $buff.= '<option value="'
                         . htmlspecialchars($unsorted_sql_query_first_part  . "\n" . ' ORDER BY ' . $asc_sort . $unsorted_sql_query_second_part)
                         . '"' . ($local_order == $asc_sort ? ' selected="selected"' : '')
