@@ -17,7 +17,8 @@ require './libraries/auth/swekey/swekey.auth.lib.php';
 
 // PHP_VERSION_ID defined in PHP 5.2.7+
 if (!defined('PHP_VERSION_ID')) {
-    define('PHP_VERSION_ID', 0 );
+    $version = explode('.', PHP_VERSION);
+    define('PHP_VERSION_ID', ((int) $version[0] * 10000 + (int) $version[1] * 100 + (int) $version[2]));
 }
 
 /*  mcrypt deprecate from php 7.1, and removed from 7.2
@@ -94,17 +95,11 @@ if (PHP_VERSION_ID < 70100 && function_exists('mcrypt_encrypt')) {
 
     function PMA_blowfish_createIV()
     {
-        if (function_exists('mcrypt_create_iv')) {
-            srand((float) microtime() * 1000000);
-            $td = mcrypt_module_open(MCRYPT_BLOWFISH, '', MCRYPT_MODE_CBC, '');
-            if ($td === false) {
-                PMA_fatalError(__('Failed to use Blowfish from mcrypt!'));
-            }
-            return mcrypt_create_iv(mcrypt_enc_get_iv_size($td), MCRYPT_RAND);
-        } else {
-            include_once "./libraries/phpseclib/Crypt/Random.php";
-            return crypt_random_string(PMA_blowfish_getIVSize());
+        if (function_exists('random_bytes')) {
+            return random_bytes(PMA_blowfish_getIVSize());
         }
+        include_once "./libraries/phpseclib/Crypt/Random.php";
+        return crypt_random_string(PMA_blowfish_getIVSize());
     }
 
     // ref  phpMyAdmin-4.0.6-all-languages/libraries/plugins/auth/AuthenticationCookie.class.php::618-682
@@ -119,29 +114,10 @@ if (PHP_VERSION_ID < 70100 && function_exists('mcrypt_encrypt')) {
      */
     function PMA_blowfish_encrypt($data, $secret)
     {
-        global $iv;
-        if (! function_exists('mcrypt_encrypt')) {
-            /**
-             * This library uses mcrypt when available, so
-             * we could always call it instead of having an
-             * if/then/else logic, however the include_once
-             * call is costly
-             */
-            include_once "./libraries/phpseclib/Crypt/AES.php";
-            $cipher = new Crypt_AES(CRYPT_AES_MODE_ECB);
-            $cipher->setKey($secret);
-            return base64_encode($cipher->encrypt($data));
-        } else {
-            return base64_encode(
-                mcrypt_encrypt(
-                    MCRYPT_BLOWFISH,
-                    $secret,
-                    $data,
-                    MCRYPT_MODE_CBC,
-                    $iv
-                )
-            );
-        }
+        include_once "./libraries/phpseclib/Crypt/AES.php";
+        $cipher = new Crypt_AES(CRYPT_AES_MODE_ECB);
+        $cipher->setKey($secret);
+        return base64_encode($cipher->encrypt($data));
     }
 
     /**
@@ -155,23 +131,10 @@ if (PHP_VERSION_ID < 70100 && function_exists('mcrypt_encrypt')) {
      */
     function PMA_blowfish_decrypt($encdata, $secret)
     {
-        global $iv;
-        if (! function_exists('mcrypt_encrypt')) {
-            include_once "./libraries/phpseclib/Crypt/AES.php";
-            $cipher = new Crypt_AES(CRYPT_AES_MODE_ECB);
-            $cipher->setKey($secret);
-            return $cipher->decrypt(base64_decode($encdata));
-        } else {
-            $data = base64_decode($encdata);
-            $decrypted = mcrypt_decrypt(
-                MCRYPT_BLOWFISH,
-                $secret,
-                $data,
-                MCRYPT_MODE_CBC,
-                $iv
-            );
-            return trim($decrypted);
-        }
+        include_once "./libraries/phpseclib/Crypt/AES.php";
+        $cipher = new Crypt_AES(CRYPT_AES_MODE_ECB);
+        $cipher->setKey($secret);
+        return $cipher->decrypt(base64_decode($encdata));
     }
 
     //global $iv;
