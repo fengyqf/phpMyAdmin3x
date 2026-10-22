@@ -54,6 +54,15 @@ if (!defined('E_DEPRECATED')) {
 }
 
 /**
+ * PHP_VERSION_ID is defined in PHP 5.2.7+, polyfill for PHP lower version
+ */
+if (!defined('PHP_VERSION_ID')) {
+    $fx_ver = explode('.', PHP_VERSION);
+    define('PHP_VERSION_ID', ((int) $fx_ver[0] * 10000 + (int) $fx_ver[1] * 100 + (isset($fx_ver[2]) ? (int) $fx_ver[2] : 0)));
+    unset($fx_ver);
+}
+
+/**
  * for verification in all procedural scripts under libraries
  */
 define('PHPMYADMIN', true);

@@ -434,7 +434,7 @@ if ($cfg['SuhosinDisableWarning'] == false
  * Warning about mcrypt. ignored in php7.1+
  */
 if (!function_exists('mcrypt_encrypt') && !$GLOBALS['cfg']['McryptDisableWarning']) {
-    if ( !(defined('PHP_VERSION_ID') && PHP_VERSION_ID > 70100) ){
+    if ( !(defined('PHP_VERSION_ID') && PHP_VERSION_ID >= 70100) ){
         PMA_warnMissingExtension('mcrypt');
     }
 }
