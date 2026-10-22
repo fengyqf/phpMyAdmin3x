@@ -110,7 +110,13 @@ if (! isset($_SESSION[' PMA_token '])) {
 function PMA_secureSession()
 {
     // prevent session fixation and XSS
-    session_regenerate_id(true);
+    $session_active = function_exists('session_status')
+        ? (session_status() === PHP_SESSION_ACTIVE)
+        : (session_id() !== '');
+
+    if ($session_active && ! headers_sent()) {
+        session_regenerate_id(true);
+    }
     $_SESSION[' PMA_token '] = md5(uniqid(rand(), true));
 }
 ?>

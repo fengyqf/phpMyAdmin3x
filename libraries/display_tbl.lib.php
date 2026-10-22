@@ -2329,7 +2329,7 @@ function PMA_displayTable(&$dt_result, &$the_disp_mode, $analyzed_sql)
                 break;
             }
         }
-        if ($sorted_column_index !== false) {
+        if ($sorted_column_index !== false && $num_rows > 0) {
             // fetch first row of the result set
             $row = PMA_DBI_fetch_row($dt_result);
             // initializing default arguments
@@ -2345,7 +2345,7 @@ function PMA_displayTable(&$dt_result, &$the_disp_mode, $analyzed_sql)
             }
             $column_for_first_row = strtoupper(substr((string)$column_for_first_row, 0, $GLOBALS['cfg']['LimitChars']));
             // fetch last row of the result set
-            PMA_DBI_data_seek($dt_result, ( ($num_rows>=1) ? $num_rows - 1 : 0));
+            PMA_DBI_data_seek($dt_result, $num_rows - 1);
             $row = PMA_DBI_fetch_row($dt_result);
             // check for non printable sorted row data
             $meta = $fields_meta[$sorted_column_index];

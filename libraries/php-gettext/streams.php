@@ -46,8 +46,8 @@ class StreamReader {
 };
 
 class StringReader {
-  var $_pos;
-  var $_str;
+  var $_pos = 0;
+  var $_str = '';
 
   function __construct($str='') {
     $this->StringReader($str);
@@ -86,9 +86,10 @@ class StringReader {
 
 
 class FileReader {
-  var $_pos;
+  var $_pos = 0;
   var $_fd;
-  var $_length;
+  var $_length = 0;
+  var $error;
 
   function __construct($filename) {
     $this->FileReader($filename);
@@ -111,7 +112,7 @@ class FileReader {
   }
 
   function read($bytes) {
-    if ($bytes) {
+    if ($bytes && $this->_fd) {
       fseek($this->_fd, $this->_pos);
 
       // PHP 5.1.1 does not read more than 8192 bytes in one fread()
@@ -129,8 +130,10 @@ class FileReader {
   }
 
   function seekto($pos) {
-    fseek($this->_fd, $pos);
-    $this->_pos = ftell($this->_fd);
+    if ($this->_fd) {
+      fseek($this->_fd, $pos);
+      $this->_pos = ftell($this->_fd);
+    }
     return $this->_pos;
   }
 
@@ -143,7 +146,9 @@ class FileReader {
   }
 
   function close() {
-    fclose($this->_fd);
+    if ($this->_fd) {
+      fclose($this->_fd);
+    }
   }
 
 };
@@ -151,21 +156,26 @@ class FileReader {
 // Preloads entire file in memory first, then creates a StringReader
 // over it (it assumes knowledge of StringReader internals)
 class CachedFileReader extends StringReader {
+  var $error;
+
   function __construct($filename) {
     $this->CachedFileReader($filename);
   }
 
   function CachedFileReader($filename) {
+    parent::__construct();
     if (file_exists($filename)) {
 
-      $length=filesize($filename);
+      $length = (int) filesize($filename);
       $fd = fopen($filename,'rb');
 
       if (!$fd) {
         $this->error = 3; // Cannot read file, probably permissions
         return false;
       }
-      $this->_str = fread($fd, $length);
+      if ($length > 0) {
+        $this->_str = fread($fd, $length);
+      }
       fclose($fd);
 
     } else {
