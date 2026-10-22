@@ -67,15 +67,9 @@ if (isset($GLOBALS['sr_take_action'])) {
         $link_to_master = null;
         if ($sr['username'] && $sr['hostname']){
             $link_to_master = PMA_replication_connect_to_master($sr['username'], $sr['pma_pw'], $sr['hostname'], $sr['port']);
-            if ($link_to_master) {
-                $_SESSION['replication']['sr_action_status'] = 'error';
-                $_SESSION['replication']['sr_action_info'] =
-                        sprintf(__('Unable to connect to master %s.'), htmlspecialchars($sr['hostname']));
-            }
         }
 
         if ($sr['username'] && $sr['hostname'] && ! $link_to_master) {
-            // seems never run to here, just keep below else-block
             $_SESSION['replication']['sr_action_status'] = 'error';
             $_SESSION['replication']['sr_action_info'] = sprintf(__('Unable to connect to master %s.'), htmlspecialchars($sr['hostname']));
         } else {

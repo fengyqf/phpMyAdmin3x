@@ -206,7 +206,7 @@ function PMA_replication_slave_control($action, $control = '', $link = null,$unt
     // reply to a defined position: START SLAVE UNTIL...
     if($action == "START" && $control == "SQL_THREAD" && isset($until['Until_Log_File']) && $until['Until_Log_File']){
         $log_file=$until['Until_Log_File'] ;
-        $pos=isset($until['RELAY_LOG_POS']) ? (int)($until['RELAY_LOG_POS']) : 0 ;
+        $pos = isset($until['Until_Log_Pos']) ? (int) $until['Until_Log_Pos'] : (isset($until['RELAY_LOG_POS']) ? (int) $until['RELAY_LOG_POS'] : 0);
         if($until['Until_Condition']=='Relay'){
             $query="START {$slvtx}{$chnl_a} SQL_THREAD UNTIL RELAY_LOG_FILE='".PMA_sqlAddSlashes($log_file)."', RELAY_LOG_POS=".$pos."{$chnl_x};";
         }else{
