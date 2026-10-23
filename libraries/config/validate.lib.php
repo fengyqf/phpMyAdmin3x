@@ -131,45 +131,24 @@ function PMA_config_validate($validator_id, &$values, $isPostSource)
 }
 
 /**
- * Empty error handler, used to temporarily restore PHP internal error handler
+ * Temporary error handler to capture regex compilation error and suppress propagation.
  *
+ * 1. Replaces the legacy test_php_errormsg() mechanism, completely removing track_errors,
+ *    html_errors, and ob_start() to avoid deprecation notices on PHP 7.2+/8.x.
+ * 2. Returning true indicates the error was handled, which suppresses screen output
+ *    and prevents bubbling up to the global PMA_Error_Handler (no Session pollution).
+ *    Compatible with PHP 5.2 through PHP 8.5+.
+ *
+ * @param int    $errno
+ * @param string $errstr
+ * @param string $errfile
+ * @param int    $errline
  * @return bool
  */
-function PMA_null_error_handler()
+function PMA_regex_error_catcher($errno = 0, $errstr = '', $errfile = '', $errline = 0)
 {
-    return false;
-}
-
-/**
- * Ensures that $php_errormsg variable will be registered in case of an error
- * and enables output buffering (when $start = true).
- * Called with $start = false disables output buffering end restores
- * html_errors and track_errors.
- *
- * @param boolean $start
- */
-function test_php_errormsg($start = true)
-{
-    static $old_html_errors, $old_track_errors, $old_error_reporting;
-    static $old_display_errors;
-    if ($start) {
-        $old_html_errors = ini_get('html_errors');
-        $old_track_errors = ini_get('track_errors');
-        $old_display_errors = ini_get('display_errors');
-        $old_error_reporting = error_reporting(E_ALL);
-        ini_set('html_errors', false);
-        ini_set('track_errors', true);
-        ini_set('display_errors', true);
-        set_error_handler("PMA_null_error_handler");
-        ob_start();
-    } else {
-        ob_end_clean();
-        restore_error_handler();
-        error_reporting($old_error_reporting);
-        ini_set('html_errors', $old_html_errors);
-        ini_set('track_errors', $old_track_errors);
-        ini_set('display_errors', $old_display_errors);
-    }
+    $GLOBALS['PMA_temp_regex_error'] = $errstr;
+    return true; // Suppress output and prevent bubbling to PMA_Error_Handler
 }
 
 /**
@@ -187,7 +166,6 @@ function test_php_errormsg($start = true)
  */
 function test_db_connection($extension, $connect_type, $host, $port, $socket, $user, $pass = null, $error_key = 'Server')
 {
-    //    test_php_errormsg();
     $socket = empty($socket) || $connect_type == 'tcp' ? null : $socket;
     $port = empty($port) || $connect_type == 'socket' ? null : ':' . $port;
     $error = null;
@@ -243,9 +221,20 @@ function test_db_connection($extension, $connect_type, $host, $port, $socket, $u
             mysqli_close($conn);
         }
     }
-    //    test_php_errormsg(false);
-    if (isset($php_errormsg)) {
-        $error .= " - $php_errormsg";
+    // Retrieve driver-specific native error message on connection failure
+    if (! is_null($error)) {
+        $server_error = '';
+        if ($extension == 'mysqli' && function_exists('mysqli_connect_error')) {
+            $server_error = mysqli_connect_error();
+        } elseif ($extension == 'mysql' && function_exists('mysql_error')) {
+            $server_error = mysql_error();
+        } elseif ($extension == 'drizzle' && isset($conn) && function_exists('drizzle_con_error')) {
+            $server_error = drizzle_con_error($conn);
+        }
+
+        if (! empty($server_error)) {
+            $error .= " - $server_error";
+        }
     }
     return is_null($error) ? true : array($error_key => $error);
 }
@@ -337,19 +326,25 @@ function validate_regex($path, $values)
         return $result;
     }
 
-    test_php_errormsg();
+    // 3. Self-contained execution: initialize temporary state, attach dedicated handler,
+    // and restore immediately. The captured error is unset right after use,
+    // ensuring zero global residue and no cross-function contamination.
+    $GLOBALS['PMA_temp_regex_error'] = null;
+    set_error_handler('PMA_regex_error_catcher');
 
     $matches = array();
     // in libraries/List_Database.class.php _checkHideDatabase(),
     // a '/' is used as the delimiter for hide_db
     preg_match('/' . $values[$path] . '/', '', $matches);
 
-    test_php_errormsg(false);
+    restore_error_handler();
 
-    if (isset($php_errormsg)) {
-        $error = preg_replace('/^preg_match\(\): /', '', $php_errormsg);
+    if (! empty($GLOBALS['PMA_temp_regex_error'])) {
+        $error = preg_replace('/^preg_match\(\): /', '', $GLOBALS['PMA_temp_regex_error']);
+        unset($GLOBALS['PMA_temp_regex_error']);
         return array($path => $error);
     }
+    unset($GLOBALS['PMA_temp_regex_error']);
 
     return $result;
 }
