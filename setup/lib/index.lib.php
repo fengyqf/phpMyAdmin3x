@@ -529,14 +529,16 @@ function perform_config_checks()
 
     //
     // $cfg['ZipDump']
-    // requires zip_open in import
+    // requires ZipArchive or zip_open in import
     //
-    if ($cf->getValue('ZipDump') && !extension_loaded('zip')) {
+    if ($cf->getValue('ZipDump')
+            && !class_exists('ZipArchive')
+            && !@function_exists('zip_open')) {
         messages_set(
             'error',
             'ZipDump_import',
             PMA_lang(PMA_lang_name('ZipDump')),
-            PMA_lang($strZipDumpImportWarning, 'zip_open'));
+            PMA_lang($strZipDumpImportWarning, 'ZipArchive or zip_open'));
     }
 
     //
