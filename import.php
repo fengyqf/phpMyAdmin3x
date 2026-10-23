@@ -311,7 +311,9 @@ if ($import_file != 'none' && !$error) {
                 }
                 break;
             case 'application/zip':
-                if ($cfg['ZipDump'] && extension_loaded('zip')) {
+                if ($cfg['ZipDump']
+                    && (class_exists('ZipArchive') || @function_exists('zip_open'))
+                ) {
                     /**
                      * Load interface for zip extension.
                      */

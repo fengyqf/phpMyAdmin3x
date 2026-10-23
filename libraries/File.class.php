@@ -627,7 +627,9 @@ class PMA_File
                 }
                 break;
             case 'application/zip':
-                if ($GLOBALS['cfg']['ZipDump'] && extension_loaded('zip')) {
+                if ($GLOBALS['cfg']['ZipDump']
+                    && (class_exists('ZipArchive') || @function_exists('zip_open'))
+                ) {
                     include_once './libraries/zip_extension.lib.php';
                     $result = PMA_getZipContents($this->getName());
                     if (! empty($result['error'])) {

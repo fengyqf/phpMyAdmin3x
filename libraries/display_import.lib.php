@@ -149,7 +149,9 @@ if ($_SESSION[$SESSION_KEY]["handler"]!="noplugin") {
         if ($cfg['BZipDump'] && @function_exists('bzopen')) {
             $compressions[] = 'bzip2';
         }
-        if ($cfg['ZipDump'] && extension_loaded('zip')) {
+        if ($cfg['ZipDump']
+            && (class_exists('ZipArchive') || @function_exists('zip_open'))
+        ) {
             $compressions[] = 'zip';
         }
         // We don't have show anything about compression, when no supported
