@@ -41,6 +41,21 @@ if (isset($plugin_list)) {
     {
         var $tablewidths;
         var $headerset;
+        var $dataY;
+        var $cellFontSize;
+        var $titleFontSize;
+        var $titleText;
+        var $currentDb;
+        var $currentTable;
+        var $colTitles;
+        var $colAlign;
+        var $results;
+        var $numFields;
+        var $fields;
+        var $sColWidth;
+        var $display_column;
+        var $titleWidth;
+        var $colFits;
 
         function checkPageBreak($h = 0, $y = '', $addpage = true)
         {

@@ -31,6 +31,7 @@ class PMA_PDF extends TCPDF
         $this->AddFont('DejaVuSans', '', 'dejavusans.php');
         $this->AddFont('DejaVuSans', 'B', 'dejavusansb.php');
         $this->SetFont(PMA_PDF_FONT, '', 14);
+        $this->setHeaderFont(array(PMA_PDF_FONT, '', 14));
         $this->setFooterFont(array(PMA_PDF_FONT, '', 14));
     }
 
