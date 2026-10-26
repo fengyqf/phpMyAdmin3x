@@ -1816,6 +1816,13 @@ $cfg['Export']['sql_insert_syntax'] = 'both';
 $cfg['Export']['pdf_report_title'] = '';
 
 /**
+ * PDF export font
+ *
+ * @global string $cfg['Export']['pdf_font']
+ */
+$cfg['Export']['pdf_font'] = 'auto';
+
+/**
  *
  *
  *@global string $cfg['Export']['xml_structure_or_data']

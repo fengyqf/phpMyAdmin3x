@@ -23,6 +23,24 @@ if (isset($plugin_list)) {
             array('type' => 'begin_group', 'name' => 'general_opts'),
             array('type' => 'message_only', 'name' => 'explanation', 'text' => __('(Generates a report containing the data of a single table)')),
             array('type' => 'text', 'name' => 'report_title', 'text' => __('Report title:')),
+            array(
+                'type' => 'select',
+                'name' => 'font',
+                'text' => __('Font:'),
+                'values' => array(
+                    'auto' => __('Auto-detect'),
+                    'stsongstdlight' => __('Simplified Chinese') . ' (STSong)',
+                    'cid0cs' => __('Simplified Chinese') . ' (Arial Unicode MS)',
+                    'msungstdlight' => __('Traditional Chinese') . ' (MSung)',
+                    'cid0ct' => __('Traditional Chinese') . ' (Arial Unicode MS)',
+                    'kozminproregular' => __('Japanese') . ' (KozMinPro)',
+                    'kozgopromedium' => __('Japanese') . ' (KozGoPro)',
+                    'cid0jp' => __('Japanese') . ' (Arial Unicode MS)',
+                    'hysmyeongjostdmedium' => __('Korean') . ' (HYSMyeongJo)',
+                    'cid0kr' => __('Korean') . ' (Arial Unicode MS)',
+                    'dejavusans' => __('International (DejaVu Sans)'),
+                ),
+            ),
             array('type' => 'hidden', 'name' => 'structure_or_data'),
             array('type' => 'end_group')
             ),
@@ -56,6 +74,7 @@ if (isset($plugin_list)) {
         var $display_column;
         var $titleWidth;
         var $colFits;
+        var $userFontChoice;
 
         function checkPageBreak($h = 0, $y = '', $addpage = true)
         {
@@ -63,7 +82,7 @@ if (isset($plugin_list)) {
                 $y = $this->y;
             }
             $current_page = $this->page;
-            if ((($y + $h) > $this->PageBreakTrigger) AND (! $this->InFooter) AND ($this->AcceptPageBreak())) {
+            if ((($y + $h) > $this->PageBreakTrigger) AND (! $this->InFooter) AND (! $this->InHeader) AND ($this->AcceptPageBreak())) {
                 if ($addpage) {
                     //Automatic page break
                     $x = $this->x;
@@ -102,12 +121,21 @@ if (isset($plugin_list)) {
                 foreach ($this->tablewidths as $width) {
                     $fullwidth += $width;
                 }
-                $this->SetY(($this->tMargin) - ($this->FontSizePt / $this->k) * 5);
+                $font = $this->getPmaFont();
+                $yPos = ($this->tMargin) - ($this->FontSizePt / $this->k) * 5;
+                if ($yPos < 10) {
+                    $yPos = 10;
+                }
+                $this->SetY($yPos);
                 $this->cellFontSize = $this->FontSizePt ;
-                $this->SetFont(PMA_PDF_FONT, '', ($this->titleFontSize ? $this->titleFontSize : $this->FontSizePt));
+                $this->SetFont($font, '', ($this->titleFontSize ? $this->titleFontSize : $this->FontSizePt));
                 $this->Cell(0, $this->FontSizePt, $this->titleText, 0, 1, 'C');
-                $this->SetFont(PMA_PDF_FONT, '', $this->cellFontSize);
-                $this->SetY(($this->tMargin) - ($this->FontSizePt / $this->k) * 2.5);
+                $this->SetFont($font, '', $this->cellFontSize);
+                $yPos2 = ($this->tMargin) - ($this->FontSizePt / $this->k) * 2.5;
+                if ($yPos2 < 25) {
+                    $yPos2 = 25;
+                }
+                $this->SetY($yPos2);
                 $this->Cell(
                     0, $this->FontSizePt,
                     __('Database') . ': ' . $this->currentDb . ',  ' . __('Table') . ': ' . $this->currentTable,
@@ -222,6 +250,123 @@ if (isset($plugin_list)) {
             $this->tMargin = $topMargin;
         }
 
+        function resolveFontForData()
+        {
+            if (!empty($this->userFontChoice) && $this->userFontChoice !== 'auto') {
+                $chosen = strtolower(trim($this->userFontChoice));
+                if (in_array($chosen, self::getValidFonts())) {
+                    $this->setPmaFont($chosen);
+                    return;
+                }
+            }
+
+            // If already resolved to a CJK font, keep it
+            if (in_array($this->getPmaFont(), array(
+                'stsongstdlight', 'cid0cs', 'msungstdlight', 'cid0ct',
+                'kozminproregular', 'kozgopromedium', 'cid0jp',
+                'hysmyeongjostdmedium', 'cid0kr'
+            ))) {
+                return;
+            }
+
+            // 1. Check UI language
+            $lang = isset($GLOBALS['lang']) ? strtolower($GLOBALS['lang']) : '';
+            if (strpos($lang, 'ja') !== false) {
+                $this->setPmaFont('kozminproregular');
+                return;
+            } elseif (strpos($lang, 'ko') !== false) {
+                $this->setPmaFont('hysmyeongjostdmedium');
+                return;
+            } elseif (strpos($lang, 'zh_tw') !== false || strpos($lang, 'zh_hk') !== false) {
+                $chineseFont = 'msungstdlight';
+            } else {
+                $chineseFont = 'stsongstdlight';
+            }
+
+            // Patterns for specific scripts
+            $jaPattern = '/[\x{3040}-\x{30ff}]/u'; // Hiragana & Katakana (uniquely Japanese)
+            $koPattern = '/[\x{ac00}-\x{d7af}\x{1100}-\x{11ff}\x{3130}-\x{318f}]/u'; // Hangul (uniquely Korean)
+            $cjkPattern = '/[\x{4e00}-\x{9fa5}\x{3000}-\x{303f}\x{ff00}-\x{ffef}]/u'; // CJK Ideographs & Symbols
+
+            $hasHanzi = false;
+
+            // 2. Check title, db name, table name for CJK characters
+            $headerText = $this->titleText . ' ' . $this->currentDb . ' ' . $this->currentTable;
+            if (preg_match($jaPattern, $headerText)) {
+                $this->setPmaFont('kozminproregular');
+                return;
+            }
+            if (preg_match($koPattern, $headerText)) {
+                $this->setPmaFont('hysmyeongjostdmedium');
+                return;
+            }
+            if (preg_match($cjkPattern, $headerText)) {
+                $hasHanzi = true;
+            }
+
+            // 3. Check table column names/comments and sample rows for CJK
+            if (!empty($this->currentDb) && !empty($this->currentTable)) {
+                // Check column names & comments
+                $colResult = PMA_DBI_try_query(
+                    'SHOW FULL COLUMNS FROM ' . PMA_backquote($this->currentDb) . '.' . PMA_backquote($this->currentTable)
+                );
+                if ($colResult) {
+                    while ($col = PMA_DBI_fetch_assoc($colResult)) {
+                        $colCheck = (isset($col['Field']) ? $col['Field'] : '') . ' ' . (isset($col['Comment']) ? $col['Comment'] : '');
+                        if (preg_match($jaPattern, $colCheck)) {
+                            PMA_DBI_free_result($colResult);
+                            $this->setPmaFont('kozminproregular');
+                            return;
+                        }
+                        if (preg_match($koPattern, $colCheck)) {
+                            PMA_DBI_free_result($colResult);
+                            $this->setPmaFont('hysmyeongjostdmedium');
+                            return;
+                        }
+                        if (!$hasHanzi && preg_match($cjkPattern, $colCheck)) {
+                            $hasHanzi = true;
+                        }
+                    }
+                    PMA_DBI_free_result($colResult);
+                }
+
+                // Check sample data (first 50 rows)
+                $sampleResult = PMA_DBI_try_query(
+                    'SELECT * FROM ' . PMA_backquote($this->currentDb) . '.' . PMA_backquote($this->currentTable) . ' LIMIT 50'
+                );
+                if ($sampleResult) {
+                    while ($srow = PMA_DBI_fetch_row($sampleResult)) {
+                        foreach ($srow as $val) {
+                            if (is_string($val)) {
+                                if (preg_match($jaPattern, $val)) {
+                                    PMA_DBI_free_result($sampleResult);
+                                    $this->setPmaFont('kozminproregular');
+                                    return;
+                                }
+                                if (preg_match($koPattern, $val)) {
+                                    PMA_DBI_free_result($sampleResult);
+                                    $this->setPmaFont('hysmyeongjostdmedium');
+                                    return;
+                                }
+                                if (!$hasHanzi && preg_match($cjkPattern, $val)) {
+                                    $hasHanzi = true;
+                                }
+                            }
+                        }
+                    }
+                    PMA_DBI_free_result($sampleResult);
+                }
+            }
+
+            if ($hasHanzi) {
+                $this->setPmaFont($chineseFont);
+                return;
+            }
+
+            // Default to Western font
+            $this->setPmaFont('dejavusans');
+        }
+
         function mysql_report($query)
         {
             unset($this->tablewidths);
@@ -230,6 +375,12 @@ if (isset($plugin_list)) {
             unset($this->colFits);
             unset($this->display_column);
             unset($this->colAlign);
+
+            $this->resolveFontForData();
+
+            // Set font before measuring column widths
+            $font = $this->getPmaFont();
+            $this->SetFont($font, '', 9);
 
             /**
              * Pass 1 for column widths
@@ -350,7 +501,7 @@ if (isset($plugin_list)) {
             $this->results = PMA_DBI_query($query, null, PMA_DBI_QUERY_UNBUFFERED);
             $this->setY($this->tMargin);
             $this->AddPage();
-            $this->SetFont(PMA_PDF_FONT, '', 9);
+            $this->SetFont($this->getPmaFont(), '', 9);
             $this->morepagestable($this->FontSizePt);
             PMA_DBI_free_result($this->results);
 
@@ -389,13 +540,22 @@ if (isset($plugin_list)) {
     function PMA_exportHeader()
     {
         global $pdf_report_title;
+        global $pdf_font;
         global $pdf;
 
         $pdf->Open();
 
-        $attr = array('titleFontSize' => 18, 'titleText' => $pdf_report_title);
+        $font_candidate = !empty($pdf_font) ? strtolower(trim($pdf_font)) : 'auto';
+        $chosen_font = ($font_candidate === 'auto' || in_array($font_candidate, PMA_PDF::getValidFonts()))
+            ? $font_candidate
+            : 'auto';
+        $attr = array(
+            'titleFontSize' => 18,
+            'titleText' => $pdf_report_title,
+            'userFontChoice' => $chosen_font
+        );
         $pdf->setAttributes($attr);
-        $pdf->setTopMargin(30);
+        $pdf->setTopMargin(80);
 
         return true;
     }

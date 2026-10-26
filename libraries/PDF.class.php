@@ -22,17 +22,59 @@ class PMA_PDF extends TCPDF
 {
     var $footerset;
     var $Alias = array();
+    var $pma_font = PMA_PDF_FONT;
 
     public function __construct($orientation='P', $unit='mm', $format='A4', $unicode=true, $encoding='UTF-8', $diskcache=false)
     {
-        parent::__construct();
+        parent::__construct($orientation, $unit, $format, $unicode, $encoding, $diskcache);
         $this->SetAuthor('phpMyAdmin ' . PMA_VERSION);
         $this->AliasNbPages();
         $this->AddFont('DejaVuSans', '', 'dejavusans.php');
         $this->AddFont('DejaVuSans', 'B', 'dejavusansb.php');
-        $this->SetFont(PMA_PDF_FONT, '', 14);
-        $this->setHeaderFont(array(PMA_PDF_FONT, '', 14));
-        $this->setFooterFont(array(PMA_PDF_FONT, '', 14));
+        $this->AddFont('stsongstdlight', '', 'stsongstdlight.php');
+        $this->AddFont('msungstdlight', '', 'msungstdlight.php');
+        $this->AddFont('cid0cs', '', 'cid0cs.php');
+        $this->AddFont('cid0ct', '', 'cid0ct.php');
+        $this->AddFont('kozminproregular', '', 'kozminproregular.php');
+        $this->AddFont('kozgopromedium', '', 'kozgopromedium.php');
+        $this->AddFont('cid0jp', '', 'cid0jp.php');
+        $this->AddFont('hysmyeongjostdmedium', '', 'hysmyeongjostdmedium.php');
+        $this->AddFont('cid0kr', '', 'cid0kr.php');
+        $this->setPmaFont(PMA_PDF_FONT);
+    }
+
+    /**
+     * Whitelist of supported and safe PDF fonts
+     *
+     * @return array
+     */
+    public static function getValidFonts()
+    {
+        return array(
+            'dejavusans',
+            'stsongstdlight', 'cid0cs',
+            'msungstdlight', 'cid0ct',
+            'kozminproregular', 'kozgopromedium', 'cid0jp',
+            'hysmyeongjostdmedium', 'cid0kr',
+            'helvetica', 'times', 'courier'
+        );
+    }
+
+    public function setPmaFont($font)
+    {
+        $clean_font = strtolower(trim($font));
+        if (! in_array($clean_font, self::getValidFonts())) {
+            $clean_font = PMA_PDF_FONT;
+        }
+        $this->pma_font = $clean_font;
+        $this->SetFont($clean_font, '', 14);
+        $this->setHeaderFont(array($clean_font, '', 14));
+        $this->setFooterFont(array($clean_font, '', 14));
+    }
+
+    public function getPmaFont()
+    {
+        return !empty($this->pma_font) ? $this->pma_font : PMA_PDF_FONT;
     }
 
     /**
@@ -43,7 +85,8 @@ class PMA_PDF extends TCPDF
         // Check if footer for this page already exists
         if (!isset($this->footerset[$this->page])) {
             $this->SetY(-15);
-            $this->SetFont(PMA_PDF_FONT, '', 14);
+            $font = $this->getPmaFont();
+            $this->SetFont($font, '', 14);
             $this->Cell(0, 6, __('Page number:') . ' ' . $this->getAliasNumPage() . '/' .  $this->getAliasNbPages(), 'T', 0, 'C');
             $this->Cell(0, 6, PMA_localisedDate(), 0, 1, 'R');
             $this->SetY(20);
