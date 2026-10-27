@@ -261,9 +261,10 @@ if ($GLOBALS['cfg']['ShowServerInfo'] || $GLOBALS['cfg']['ShowPhpInfo']) {
 
     if ($cfg['ShowPhpInfo']) {
         PMA_printListItem('PHP '.PHP_VERSION.' - '.__('Show PHP information'), 'li_phpinfo', './phpinfo.php?' . $common_url_query);
-        if(!isset($_GET['checkphpext'])){
-            PMA_printListItem('Check required PHP extensions', '', './main.php?checkphpext=y&' . $common_url_query);
-        }else{
+        if (!isset($_GET['checkphpext'])) {
+            PMA_printListItem(__('Check required PHP extensions'), '', './main.php?checkphpext=y&' . $common_url_query);
+        } else {
+            PMA_printListItem(__('Check required PHP extensions') . ' (' . __('Hide') . ')', '', './main.php?' . $common_url_query);
             fsfx_check_php_extensions();
         }
     }
@@ -514,40 +515,106 @@ function fsfx_get_server_charset()
 }
 
 
+/*
+ *  fsfx_check_php_extensions()
+ *  PHP extensions, categories by role and likelihood of absence:
+ *  - required: Core runtime prerequisites. 
+ *       Note that pcre, spl, and session (and json/hash in PHP 8+)
+ *       are permanently built-in or checked prior to main.php, so they are impossible to be missing here;
+ *       mbstring may be absent in minimal OS packages.
+ *  - recommended: Security and network modules (openssl, curl, iconv).
+ *       Conditionally includes mcrypt (PHP < 7.1) and com_dotnet (Windows WMI monitoring).
+ *  - optional: Feature-specific modules (bz2, zip, zlib, simplexml, xml, gd, gettext, bcmath, gmp).
+ *  - [Note - Ignored modules]:
+ *       - Database drivers (mysqli, mysql, drizzle, pdo, mysqlnd): Ignored here because PMA supports
+ *         multiple drivers (e.g. mysql or mysqli) and the DBI layer (libraries/database_interface.lib.php)
+ *         already verifies, negotiates, and falls back between configured drivers at startup.
+ *       - On-demand / environment modules (fileinfo, soap, dbase, imagick, tidy, apc/uploadprogress, apache)
+ *         are used only within specific sub-features and handled by their respective libraries.
+ */
 function fsfx_check_php_extensions()
 {
-    /*
-     * key   : extension name, used by extension_loaded()/phpversion()
-     * value : name to display
-     */
-    $extensions = array(
-        'mysqli'    => 'mysqli',
-        'pdo'       => 'PDO',
-        'pdo_mysql' => 'PDO_MYSQL',
-        'mysqlnd'   => 'mysqlnd',
-        'mbstring'  => 'mbstring',
-        'openssl'   => 'openssl',
-        'json'      => 'json',
-        'zip'       => 'zip',
-        'zlib'      => 'zlib',
-        'ctype'     => 'ctype',
-        'filter'    => 'filter',
-        'session'   => 'session',
-        'iconv'     => 'iconv',
-        'gd'        => 'gd',
-        'xml'       => 'xml',
-        'gettext'   => 'gettext'
+    $phpVersionId = defined('PHP_VERSION_ID') ? PHP_VERSION_ID : 0;
+
+    $categories = array(
+        'required' => array(
+            'title' => __('Required'),
+            'extensions' => array(
+                'session'  => array('name' => 'Session',   'desc' => __('Session handling')),
+                'spl'      => array('name' => 'SPL',       'desc' => __('Standard PHP Library')),
+                'pcre'     => array('name' => 'PCRE',      'desc' => __('Regular expressions')),
+                'json'     => array('name' => 'JSON',      'desc' => __('JSON format support')),
+                'hash'     => array('name' => 'Hash',      'desc' => __('Cryptographic hashing')),
+                'ctype'    => array('name' => 'Ctype',     'desc' => __('Character type checking')),
+                'mbstring' => array('name' => 'Mbstring',  'desc' => __('Multibyte string support')),
+                'filter'   => array('name' => 'Filter',    'desc' => __('Input data filtering')),
+            ),
+        ),
+        'recommended' => array(
+            'title' => __('Recommended'),
+            'extensions' => array(
+                'openssl'  => array('name' => 'OpenSSL',   'desc' => __('Cookie encryption & secure connection')),
+                'curl'     => array('name' => 'cURL',      'desc' => __('Version updates & external requests')),
+                'iconv'    => array('name' => 'Iconv',     'desc' => __('Character set conversion')),
+            ),
+        ),
+        'optional' => array(
+            'title' => __('Optional'),
+            'extensions' => array(
+                'zlib'      => array('name' => 'Zlib',      'desc' => __('Gzip compression import/export')),
+                'zip'       => array('name' => 'Zip',       'desc' => __('ZIP archive import/export')),
+                'bz2'       => array('name' => 'Bzip2',     'desc' => __('Bzip2 compression import/export')),
+                'simplexml' => array('name' => 'SimpleXML', 'desc' => __('XML and ODS import support')),
+                'xml'       => array('name' => 'XML',       'desc' => __('XML parser support')),
+                'gd'        => array('name' => 'GD',        'desc' => __('Image thumbnails & GIS graphs')),
+                'gettext'   => array('name' => 'Gettext',   'desc' => __('Native localization performance')),
+                'bcmath'    => array('name' => 'BCMath',    'desc' => __('Arbitrary precision mathematics')),
+                'gmp'       => array('name' => 'GMP',       'desc' => __('High-precision arithmetic')),
+            ),
+        ),
     );
 
-    foreach ($extensions as $ext => $label) {
-        echo "<li><b>" . htmlspecialchars($label, ENT_QUOTES) . "</b>: ";
-        if (!extension_loaded($ext)) {
-            echo '<img src="themes/dot.gif" title="" alt="" class="icon ic_s_error2" />';
-        } else {
-            echo '<img src="themes/dot.gif" title="" alt="" class="icon ic_s_success" />';
-        }
-        echo "</li>\n";
+    // On PHP 5.x, mcrypt was recommended for cookie encryption (replaced by OpenSSL in PHP 7.1+)
+    if ($phpVersionId < 70100) {
+        $categories['recommended']['extensions']['mcrypt'] = array(
+            'name' => 'Mcrypt',
+            'desc' => __('Cookie encryption (PHP 5)'),
+        );
     }
+
+    // On Windows, com_dotnet is recommended for WMI system performance monitoring (SysInfo)
+    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+        $categories['recommended']['extensions']['com_dotnet'] = array(
+            'name' => 'COM',
+            'desc' => __('Windows WMI system monitoring'),
+        );
+    }
+
+    echo '<li style="list-style:none; padding: 4px 0 2px 0;">' . "\n";
+    foreach ($categories as $catKey => $cat) {
+        echo '  <div style="font-weight: bold; margin: 6px 0 2px 2px; color: #444;">'
+            . htmlspecialchars($cat['title'], ENT_QUOTES) . ':</div>' . "\n";
+        echo '  <ul style="margin: 0; padding-left: 18px;">' . "\n";
+        foreach ($cat['extensions'] as $ext => $info) {
+            $isLoaded = extension_loaded($ext);
+            $icon = $isLoaded ? 's_success.png' : ($catKey === 'required' ? 's_error2.png' : 's_notice.png');
+            $statusLabel = $isLoaded ? 'OK' : ($catKey === 'required' ? __('Missing') : __('Not loaded'));
+            $title = $info['name'] . ': ' . $info['desc'] . ' (' . $statusLabel . ')';
+
+            echo '    <li>';
+            if (isset($_SESSION['PMA_Theme']) && function_exists('PMA_getImage')) {
+                echo PMA_getImage($icon, $title, array('title' => $title));
+            } else {
+                $iconClass = $isLoaded ? 'ic_s_success' : ($catKey === 'required' ? 'ic_s_error2' : 'ic_s_notice');
+                echo '<img src="themes/dot.gif" title="' . htmlspecialchars($title, ENT_QUOTES) . '" alt="" class="icon ' . $iconClass . '" />';
+            }
+            echo ' <b>' . htmlspecialchars($info['name'], ENT_QUOTES) . '</b>'
+                . ' <span style="color:#666; font-size:smaller;">(' . htmlspecialchars($info['desc'], ENT_QUOTES) . ')</span>'
+                . "</li>\n";
+        }
+        echo "  </ul>\n";
+    }
+    echo "</li>\n";
 }
 
 
