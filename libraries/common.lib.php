@@ -3725,6 +3725,7 @@ function PMA_getServerType()
 
 /**
  * Analyzes the limit clause and return the start and length attributes of it.
+ * Follows MySQL syntax: LIMIT {[offset,] row_count | row_count OFFSET offset}
  *
  * @param string $limit_clause limit clause
  *
@@ -3732,10 +3733,30 @@ function PMA_getServerType()
  */
 function PMA_analyzeLimitClause($limit_clause)
 {
-    $start_and_length = explode(',', str_ireplace('LIMIT', '', $limit_clause));
+    if (preg_match('/LIMIT\s+(\d+)\s+OFFSET\s+(\d+)/i', $limit_clause, $matches)) {
+        return array(
+            'start'  => (int)$matches[2],
+            'length' => (int)$matches[1]
+        );
+    }
+
+    if (preg_match('/LIMIT\s+(\d+)\s*,\s*(\d+)/i', $limit_clause, $matches)) {
+        return array(
+            'start'  => (int)$matches[1],
+            'length' => (int)$matches[2]
+        );
+    }
+
+    if (preg_match('/LIMIT\s+(\d+)/i', $limit_clause, $matches)) {
+        return array(
+            'start'  => 0,
+            'length' => (int)$matches[1]
+        );
+    }
+
     return array(
-        'start'  => (int)trim($start_and_length[0]),
-        'length' => isset($start_and_length[1]) ? (int)trim($start_and_length[1]) : 0
+        'start'  => 0,
+        'length' => 0
     );
 }
 
