@@ -185,7 +185,7 @@ class Crypt_AES extends Crypt_Rijndael {
     {
         if ( !defined('CRYPT_AES_MODE') ) {
             switch (true) {
-                case extension_loaded('mcrypt') && in_array('rijndael-128', mcrypt_list_algorithms()):
+                case extension_loaded('mcrypt') && version_compare(PHP_VERSION, '7.1.0', '<') && in_array('rijndael-128', mcrypt_list_algorithms()):
                     define('CRYPT_AES_MODE', CRYPT_AES_MODE_MCRYPT);
                     break;
                 default:

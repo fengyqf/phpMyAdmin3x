@@ -69,7 +69,7 @@ if (!function_exists('crypt_random_string')) {
     {
         if (CRYPT_RANDOM_IS_WINDOWS) {
             // method 1. prior to PHP 5.3, mcrypt_create_iv() would call rand() on windows
-            if (extension_loaded('mcrypt') && version_compare(PHP_VERSION, '5.3.0', '>=')) {
+            if (extension_loaded('mcrypt') && version_compare(PHP_VERSION, '5.3.0', '>=') && version_compare(PHP_VERSION, '7.1.0', '<')) {
                 return mcrypt_create_iv($length);
             }
             // method 2. openssl_random_pseudo_bytes was introduced in PHP 5.3.0 but prior to PHP 5.3.4 there was,
@@ -108,7 +108,7 @@ if (!function_exists('crypt_random_string')) {
             // surprisingly slower than method 2. maybe that's because mcrypt_create_iv does a bunch of error checking that we're
             // not doing. regardless, this'll only be called if this PHP script couldn't open /dev/urandom due to open_basedir
             // restrictions or some such
-            if (extension_loaded('mcrypt')) {
+            if (extension_loaded('mcrypt') && version_compare(PHP_VERSION, '7.1.0', '<')) {
                 return mcrypt_create_iv($length, MCRYPT_DEV_URANDOM);
             }
         }

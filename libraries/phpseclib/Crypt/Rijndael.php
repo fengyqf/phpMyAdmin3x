@@ -398,7 +398,7 @@ class Crypt_Rijndael {
      */
     var $debuffer = array('ciphertext' => '');
 
-    function __construct($mode = CRYPT_AES_MODE_CBC)
+    function __construct($mode = CRYPT_RIJNDAEL_MODE_CBC)
     {
         return $this->Crypt_Rijndael($mode);
     }

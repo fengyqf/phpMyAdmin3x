@@ -83,13 +83,16 @@ if (PHP_VERSION_ID < 70100 && function_exists('mcrypt_encrypt')) {
         return trim(mcrypt_decrypt(MCRYPT_BLOWFISH, $secret, base64_decode($encdata), MCRYPT_MODE_CBC, $iv));
     }
 
-    // from php 7.1, mcrypt was marked Deprecated, use phpseclib (copied from PMA 4.0.6)
+    // from php 7.1, mcrypt was marked Deprecated; use openssl primarily, or phpseclib Rijndael (pure-PHP, ref PMA 4.8+)
 } elseif(PHP_VERSION_ID >= 70100 ){
     // ref  phpMyAdmin-4.0.10.20-all-languages/libraries/plugins/auth/AuthenticationCookie.class.php::806-836
     function PMA_blowfish_getIVSize()
     {
-        include_once "./libraries/phpseclib/Crypt/AES.php";
-        $cipher = new Crypt_AES(CRYPT_AES_MODE_ECB);
+        if (function_exists('openssl_cipher_iv_length')) {
+            return openssl_cipher_iv_length('AES-128-CBC');
+        }
+        include_once "./libraries/phpseclib/Crypt/Rijndael.php";
+        $cipher = new Crypt_Rijndael(CRYPT_RIJNDAEL_MODE_ECB);
         return $cipher->block_size;
     }
 
@@ -98,14 +101,17 @@ if (PHP_VERSION_ID < 70100 && function_exists('mcrypt_encrypt')) {
         if (function_exists('random_bytes')) {
             return random_bytes(PMA_blowfish_getIVSize());
         }
+        if (function_exists('openssl_random_pseudo_bytes')) {
+            return openssl_random_pseudo_bytes(PMA_blowfish_getIVSize());
+        }
         include_once "./libraries/phpseclib/Crypt/Random.php";
         return crypt_random_string(PMA_blowfish_getIVSize());
     }
 
     // ref  phpMyAdmin-4.0.6-all-languages/libraries/plugins/auth/AuthenticationCookie.class.php::618-682
+    // and  phpMyAdmin-4.8.4-all-languages/libraries/classes/Plugins/Auth/AuthenticationCookie.php::720-798
     /**
-     * Encryption using blowfish algorithm (mcrypt)
-     * or phpseclib's AES if mcrypt not available
+     * Encryption using openssl or phpseclib's Rijndael (pure-PHP)
      *
      * @param string $data   original data
      * @param string $secret the secret
@@ -114,15 +120,17 @@ if (PHP_VERSION_ID < 70100 && function_exists('mcrypt_encrypt')) {
      */
     function PMA_blowfish_encrypt($data, $secret)
     {
-        include_once "./libraries/phpseclib/Crypt/AES.php";
-        $cipher = new Crypt_AES(CRYPT_AES_MODE_ECB);
+        if (function_exists('openssl_encrypt')) {
+            return openssl_encrypt($data, 'AES-256-ECB', $secret, 0);
+        }
+        include_once "./libraries/phpseclib/Crypt/Rijndael.php";
+        $cipher = new Crypt_Rijndael(CRYPT_RIJNDAEL_MODE_ECB);
         $cipher->setKey($secret);
         return base64_encode($cipher->encrypt($data));
     }
 
     /**
-     * Decryption using blowfish algorithm (mcrypt)
-     * or phpseclib's AES if mcrypt not available
+     * Decryption using openssl or phpseclib's Rijndael (pure-PHP)
      *
      * @param string $encdata encrypted data
      * @param string $secret  the secret
@@ -131,8 +139,14 @@ if (PHP_VERSION_ID < 70100 && function_exists('mcrypt_encrypt')) {
      */
     function PMA_blowfish_decrypt($encdata, $secret)
     {
-        include_once "./libraries/phpseclib/Crypt/AES.php";
-        $cipher = new Crypt_AES(CRYPT_AES_MODE_ECB);
+        if (function_exists('openssl_decrypt')) {
+            $dec = openssl_decrypt($encdata, 'AES-256-ECB', $secret, 0);
+            if ($dec !== false) {
+                return $dec;
+            }
+        }
+        include_once "./libraries/phpseclib/Crypt/Rijndael.php";
+        $cipher = new Crypt_Rijndael(CRYPT_RIJNDAEL_MODE_ECB);
         $cipher->setKey($secret);
         return $cipher->decrypt(base64_decode($encdata));
     }
