@@ -1301,12 +1301,10 @@ function PMA_DBI_postConnect($link, $is_controluser = false)
                 );
                 define('PMA_MYSQL_STR_VERSION', $version['@@version']);
                 define('PMA_MYSQL_VERSION_COMMENT', $version['@@version_comment']);
-                // server type: MySQL, MariaDB, Percona
-                $serverType='MySQL';
+                // server type (SQL dialect family): MySQL, MariaDB
+                $serverType = 'MySQL';
                 if (stripos($version['@@version'], 'mariadb') !== false) {
                     $serverType = 'MariaDB';
-                }elseif (stripos($version['@@version_comment'], 'percona') !== false) {
-                    $serverType = 'Percona';
                 }
                 define('PMA_MYSQL_SERVER_TYPE', $serverType);
             } else {
