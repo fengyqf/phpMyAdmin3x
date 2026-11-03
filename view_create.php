@@ -145,7 +145,7 @@ $url_params['reload'] = 1;
     </tr>
 
     <tr><td><?php echo __('Column names'); ?></td>
-        <td><input type="text" maxlength="100" size="50" name="view[column_names]"
+        <td><input type="text" size="50" name="view[column_names]"
                 onfocus="this.select()"
                 value="<?php echo htmlspecialchars($view['column_names']); ?>" />
         </td>
