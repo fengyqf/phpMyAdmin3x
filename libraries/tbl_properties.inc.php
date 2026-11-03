@@ -696,7 +696,7 @@ if ($action == 'tbl_create.php') {
         <td width="25">&nbsp;</td>
         <th><?php echo __('Collation') ;?>:&nbsp;</th>
     </tr>
-    <tr><td><input type="text" name="comment" size="40" maxlength="80"
+    <tr><td><input type="text" name="comment" size="40"
                 value="<?php echo (isset($_REQUEST['comment']) ? htmlspecialchars($_REQUEST['comment']) : ''); ?>"
                 class="textfield" />
         </td>

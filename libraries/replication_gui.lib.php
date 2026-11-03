@@ -158,7 +158,7 @@ function PMA_replication_gui_changemaster($submitname,$data=NULL)
         }
         echo '  <div class="item">';
         echo '    <label for="repl_channel">' . __('Channel') . ' :</label>';
-        echo '     <input type="text" id="repl_channel" name="repl_channel" maxlength="6" value="'.$repl_channel.'" title="CHANNEL/connection_name" /> ';
+        echo '     <input type="text" id="repl_channel" name="repl_channel" value="'.$repl_channel.'" title="CHANNEL/connection_name" /> ';
         echo ' <input type="checkbox" id="default_channel" name="default_channel" value="1" style="width:2em;" '
             .( $for_default_channel ? ' checked="checked"' : '')
             .' />';

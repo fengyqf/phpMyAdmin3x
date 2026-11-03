@@ -972,7 +972,7 @@ function PMA_RTN_getEditorForm($mode, $operation, $routine)
     $retval .= "</tr>\n";
     $retval .= "<tr>\n";
     $retval .= "    <td>" . __('Comment') . "</td>\n";
-    $retval .= "    <td><input type='text' name='item_comment' maxlength='64'\n";
+    $retval .= "    <td><input type='text' name='item_comment'\n";
     $retval .= "               value='{$routine['item_comment']}' /></td>\n";
     $retval .= "</tr>\n";
     $retval .= "</table>\n";
