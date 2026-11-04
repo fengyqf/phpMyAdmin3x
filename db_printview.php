@@ -144,7 +144,7 @@ if ($num_tables == 0) {
     </td>
             <?php
             if ($cfg['ShowStats']) {
-                $tblsize =  (int)$sts_data['Data_length'] + (int)$sts_data['Index_length'];
+                $tblsize =  doubleval($sts_data['Data_length']) + doubleval($sts_data['Index_length']);
                 $sum_size += $tblsize;
                 list($formated_size, $unit) =  PMA_formatByteDown($tblsize, 3, 1);
                 ?>
