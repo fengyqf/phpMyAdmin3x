@@ -14,7 +14,7 @@ for window functions in sql, such as row_number()
 function fsfx__is_ignore_sql_parse($sql_query){
     //$sql_query=strtolower($sql_query);
     //window function ...() over()
-    if( preg_match('/over\s*\(/i', $sql_query) ){
+    if( preg_match('/\bover\s*\(/i', $sql_query) ){
         return true;
     }
     // Ignore CTE for table extraction (too complex for legacy logic)
