@@ -51,6 +51,7 @@ if (isset($_REQUEST['do_save_data'])) {
     for ($i = 0; $i < $field_cnt; $i++) {
         //same as ./tbl_addfield.php
         $tmp_pos='';
+        unset($tmp_field_def);
         if($_REQUEST['field_after'][$i]){
             // field position defined in files list
             $tmp_field_def=true;

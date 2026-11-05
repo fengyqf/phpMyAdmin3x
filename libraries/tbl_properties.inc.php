@@ -120,7 +120,9 @@ $available_mime = array();
 
 $comments_map = PMA_getComments($db, $table);
 $header_cells[] = __('Comments');
-$header_cells[] = __('Position');
+if ($action != 'tbl_create.php') {
+    $header_cells[] = __('Position');
+}
 
 if ($cfgRelation['mimework'] && $cfg['BrowseMIME']) {
     $mime_map = PMA_getMIME($db, $table);
@@ -150,7 +152,7 @@ if (isset($field_fulltext) && is_array($field_fulltext)) {
 
 // cache fields in array, for field position in table structure
 $fx_fields = array();
-if (!empty($table)){
+if ($action != 'tbl_create.php' && !empty($table)){
     foreach( (array) PMA_DBI_get_columns($db, $table, null, true) as $key => $value){
         $fx_fields[$key]=$value['Field'];
     }
@@ -536,10 +538,12 @@ for ($i = 0; $i < $num_fields; $i++) {
     $ci++;
 
     // position
-    $content_cells[$i][$ci] = getHtmlFieldsSelect('field_after[' . $i . ']'
-        , $fx_fields, $check=NULL
-        , $id='field_' . $i . '_' . ($ci - $ci_offset) . '');
-    $ci++;
+    if ($action != 'tbl_create.php') {
+        $content_cells[$i][$ci] = getHtmlFieldsSelect('field_after[' . $i . ']'
+            , $fx_fields, $check=NULL
+            , $id='field_' . $i . '_' . ($ci - $ci_offset) . '');
+        $ci++;
+    }
 
     // column MIME-types
     if ($cfgRelation['mimework'] && $cfg['BrowseMIME'] && $cfgRelation['commwork']) {
