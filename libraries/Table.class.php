@@ -308,17 +308,24 @@ class PMA_Table
      */
     static public function sGetStatusInfo($db, $table, $info = null, $force_read = false, $disable_error = false)
     {
-        if (! isset(PMA_Table::$cache[$db][$table]) || $force_read) {
+        $table_low = strtolower($table);
+        $has_cache = isset(PMA_Table::$cache[$db][$table])
+            || (substr(PHP_OS, 0, 3) == 'WIN' && isset(PMA_Table::$cache[$db][$table_low]));
+
+        if (! $has_cache || $force_read) {
             PMA_DBI_get_tables_full($db, $table);
         }
 
-        $table_low=strtolower($table);
         // try lower-case for table name, for windows case insensitive
+        // Note: Official modern phpMyAdmin (5.2+) probes server's `@@lower_case_table_names == 1`
+        // and normalizes table/db names to lowercase at controller entrypoints.
+        // For 3.5.x minimal fix: bridge cache alias if matched by lowercase on Windows.
         if (isset(PMA_Table::$cache[$db][$table])) {
-            $tb_cache=PMA_Table::$cache[$db][$table];
-        }elseif(substr(PHP_OS,0,3)=='WIN' && isset(PMA_Table::$cache[$db][$table_low])){
-            $tb_cache=PMA_Table::$cache[$db][$table_low];
-        }else{
+            $tb_cache = PMA_Table::$cache[$db][$table];
+        } elseif (substr(PHP_OS, 0, 3) == 'WIN' && isset(PMA_Table::$cache[$db][$table_low])) {
+            $tb_cache = PMA_Table::$cache[$db][$table_low];
+            PMA_Table::$cache[$db][$table] =& PMA_Table::$cache[$db][$table_low];
+        } else {
             // happens when we enter the table creation dialog
             // or when we really did not get any status info, for example
             // when $table == 'TABLE_NAMES' after the user tried SHOW TABLES
