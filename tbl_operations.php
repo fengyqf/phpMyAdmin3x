@@ -118,6 +118,7 @@ if (isset($_REQUEST['submitoptions'])) {
     }
 
     if (! empty($_REQUEST['tbl_collation'])
+      && empty($_REQUEST['change_all_collations'])
       && $_REQUEST['tbl_collation'] !== $tbl_collation) {
         $table_alters[] = 'DEFAULT ' . PMA_generateCharsetQueryPart($_REQUEST['tbl_collation']);
     }
@@ -212,12 +213,11 @@ if (isset($_REQUEST['submitoptions'])) {
     }
     // query changes
     foreach($sql_query_ex as $tmp ){
-        if(empty($sql_query)){
-            $sql_query=$tmp;
-        }
+        $sql_query = empty($sql_query) ? $tmp : $sql_query . ";\r\n" . $tmp;
         // Execute query independently first to avoid short-circuit skipping of subsequent queries
         $query_result   = PMA_DBI_query($tmp);
         $result         = (isset($result) ? $result : true) && $query_result;
+        $reread_info    = true;
         foreach (PMA_DBI_get_warnings() as $warning) {
             // In MariaDB 5.1.44, when altering a table from Maria to MyISAM
             // and if TRANSACTIONAL was set, the system reports an error;
