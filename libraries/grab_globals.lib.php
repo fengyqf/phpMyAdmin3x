@@ -63,7 +63,7 @@ function PMA_recursive_extract($array, &$target, $sanitize = true)
     for copy from $_GET,$_POST to $GLOBALS, so fix it
     $target is useless
 */
-function PMA_recursive_extract($array, $target, $sanitize = true)
+function PMA_recursive_extract($array, $target = null, $sanitize = true)
 {
     if (! is_array($array)) {
         return false;
@@ -81,28 +81,8 @@ function PMA_recursive_extract($array, $target, $sanitize = true)
         if (strlen($key) === 0) {
             continue;
         }
-        if (is_array($array[$key])) {
-            unset($GLOBALS[$key]);
-            $txv=array($key => NULL,);   // to extract value
-            PMA_recursive_extract_rev($array[$key], $txv[$key], false);
-            $GLOBALS[$key]=$txv[$key];
-        } else {
-            $GLOBALS[$key] = $array[$key];
-        }
-    }
-    return true;
-}
-
-function PMA_recursive_extract_rev($array,&$target,$sanitize=false)
-{
-    foreach ($array as $key => $value ) {
-
-        if (is_array($array[$key])) {
-            unset($target[$key]);
-            PMA_recursive_extract_rev($array[$key], $target[$key], false);
-        } else {
-            $target[$key] = $array[$key];
-        }
+        unset($GLOBALS[$key]);
+        $GLOBALS[$key] = $array[$key];
     }
     return true;
 }
@@ -135,11 +115,11 @@ $_import_blacklist = array(
 );
 
 if (! empty($_GET)) {
-    PMA_recursive_extract($_GET, $GLOBALS);
+    PMA_recursive_extract($_GET);
 }
 
 if (! empty($_POST)) {
-    PMA_recursive_extract($_POST, $GLOBALS);
+    PMA_recursive_extract($_POST);
 }
 
 if (! empty($_FILES)) {
