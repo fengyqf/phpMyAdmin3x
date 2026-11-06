@@ -252,7 +252,7 @@ if (isset($_REQUEST['do_save_data'])) {
                 $overhead_size  = (float) 0;
                 $overhead_check = '';
 
-                $tblsize                    =  doubleval($tbl_stats['Data_length']) + doubleval($tbl_stats['Index_length']);
+                $tblsize                    =  floatval($tbl_stats['Data_length']) + floatval($tbl_stats['Index_length']);
                 $sum_size                   += $tblsize;
                 list($formatted_size, $unit) =  PMA_formatByteDown($tblsize, 3, ($tblsize > 0) ? 1 : 0);
                 if (isset($tbl_stats['Data_free']) && $tbl_stats['Data_free'] > 0) {
