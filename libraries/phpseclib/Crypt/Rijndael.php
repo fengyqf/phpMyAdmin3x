@@ -400,7 +400,7 @@ class Crypt_Rijndael {
 
     function __construct($mode = CRYPT_RIJNDAEL_MODE_CBC)
     {
-        return $this->Crypt_Rijndael($mode);
+        $this->Crypt_Rijndael($mode);
     }
     /**
      * Default Constructor.

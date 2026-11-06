@@ -402,7 +402,9 @@ function T_gettext($msgid) {
     else return _gettext($msgid);
 }
 function T_($msgid) {
-    if (_check_locale_and_function()) return _($msgid);
+    if (_check_locale_and_function()) {
+        return (defined('PHP_VERSION_ID') && PHP_VERSION_ID >= 80600) ? gettext($msgid) : _($msgid);
+    }
     return __($msgid);
 }
 function T_ngettext($singular, $plural, $number) {
@@ -492,8 +494,10 @@ if (!function_exists('gettext')) {
     function gettext($msgid) {
         return _gettext($msgid);
     }
-    function _($msgid) {
-        return __($msgid);
+    if (!defined('PHP_VERSION_ID') || PHP_VERSION_ID < 80600) {
+        function _($msgid) {
+            return __($msgid);
+        }
     }
     function ngettext($singular, $plural, $number) {
         return _ngettext($singular, $plural, $number);

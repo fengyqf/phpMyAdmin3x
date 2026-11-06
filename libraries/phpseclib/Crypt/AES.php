@@ -169,7 +169,7 @@ class Crypt_AES extends Crypt_Rijndael {
     function __construct($mode = CRYPT_AES_MODE_CBC)
     {
         parent::__construct($mode);
-        return $this->_Crypt_AES($mode);
+        $this->_Crypt_AES($mode);
     }
     /**
      * Default Constructor.

@@ -160,7 +160,7 @@ foreach ($tables as $keyname => $each_table) {
         }
 
         if ($is_show_stats) {
-            $tblsize                    =  doubleval($each_table['Data_length']) + doubleval($each_table['Index_length']);
+            $tblsize                    =  floatval($each_table['Data_length']) + floatval($each_table['Index_length']);
             $sum_size                   += $tblsize;
             list($formatted_size, $unit) =  PMA_formatByteDown($tblsize, 3, ($tblsize > 0) ? 1 : 0);
             if (isset($each_table['Data_free']) && $each_table['Data_free'] > 0) {

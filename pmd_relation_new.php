@@ -63,7 +63,7 @@ if (PMA_foreignkey_supported($type_T1) && PMA_foreignkey_supported($type_T2) && 
 // internal (pmadb) relation
 } else {
     if ($GLOBALS['cfgRelation']['relwork'] == false) {
-        PMD_return_new(0, _('General relation features') . ':' . _('Disabled'));
+        PMD_return_new(0, __('General relation features') . ':' . __('Disabled'));
     } else {
         // no need to recheck if the keys are primary or unique at this point,
         // this was checked on the interface part
