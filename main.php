@@ -228,10 +228,9 @@ echo '<div class="group pmagroup">';
 echo '<h2>phpMyAdmin</h2>';
 echo '<ul>';
 $class = null;
-// workaround for bug 3302733; some browsers don't like the situation
-// where phpMyAdmin is called on a secure page but a part of the page
-// (the version check) refers to a non-secure page
-if ($GLOBALS['cfg']['VersionCheck'] && ! $GLOBALS['PMA_Config']->get('is_https')) {
+// We rely on CSP to allow access to http://www.phpmyadmin.net, but IE lacks
+// support here and does not allow request to http once using https.
+if ($GLOBALS['cfg']['VersionCheck'] && (! $GLOBALS['PMA_Config']->get('is_https') || PMA_USR_BROWSER_AGENT != 'IE')) {
     $class = 'jsversioncheck';
 }
 PMA_printListItem(__('Version information') . ': ' . PMA_VERSION, 'li_pma_version', null, null, null, null, $class);
@@ -290,14 +289,14 @@ if (! @extension_loaded('mbstring')) {
  */
 $gc_time = (int)@ini_get('session.gc_maxlifetime');
 if ($gc_time < $GLOBALS['cfg']['LoginCookieValidity'] ) {
-    trigger_error(PMA_Message::decodeBB(__('Your PHP parameter [a@http://php.net/manual/en/session.configuration.php#ini.session.gc-maxlifetime@]session.gc_maxlifetime[/a] is lower that cookie validity configured in phpMyAdmin, because of this, your login will expire sooner than configured in phpMyAdmin.')), E_USER_WARNING);
+    trigger_error(__('Your PHP parameter [a@http://php.net/manual/en/session.configuration.php#ini.session.gc-maxlifetime@_blank]session.gc_maxlifetime[/a] is lower than cookie validity configured in phpMyAdmin, because of this, your login will expire sooner than configured in phpMyAdmin.'), E_USER_WARNING);
 }
 
 /**
  * Check whether LoginCookieValidity is limited by LoginCookieStore.
  */
 if ($GLOBALS['cfg']['LoginCookieStore'] != 0 && $GLOBALS['cfg']['LoginCookieStore'] < $GLOBALS['cfg']['LoginCookieValidity']) {
-    trigger_error(PMA_Message::decodeBB(__('Login cookie store is lower than cookie validity configured in phpMyAdmin, because of this, your login will expire sooner than configured in phpMyAdmin.')), E_USER_WARNING);
+    trigger_error(__('Login cookie store is lower than cookie validity configured in phpMyAdmin, because of this, your login will expire sooner than configured in phpMyAdmin.'), E_USER_WARNING);
 }
 
 /**
@@ -375,12 +374,10 @@ if ($cfg['SuhosinDisableWarning'] == false
     && @ini_get('suhosin.request.max_value_length')
 ) {
     trigger_error(
-        PMA_sanitize(
-            sprintf(
-                __('Server running with Suhosin. Please refer to %sdocumentation%s for possible issues.'),
-                '[a@./Documentation.html#faq1_38@_blank]',
-                '[/a]'
-            )
+        sprintf(
+            __('Server running with Suhosin. Please refer to %sdocumentation%s for possible issues.'),
+            '[a@./Documentation.html#faq1_38@_blank]',
+            '[/a]'
         ),
         E_USER_WARNING
     );

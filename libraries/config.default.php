@@ -549,7 +549,11 @@ $cfg['AjaxEnable'] = true;
  *
  * @global boolean $cfg['VersionCheck']
  */
-$cfg['VersionCheck'] = VERSION_CHECK_DEFAULT;
+if (defined('VERSION_CHECK_DEFAULT')) {
+    $cfg['VersionCheck'] = VERSION_CHECK_DEFAULT;
+} else {
+    $cfg['VersionCheck'] = true;
+}
 
 /**
  * maximum number of db's displayed in left frame and database list
@@ -1139,7 +1143,6 @@ $cfg['PropertiesNumColumns'] = 1;
  * 'server_status.php' = runtime information
  * 'server_variables.php' = MySQL server variables
  * 'server_privileges.php' = user management
- * 'server_processlist.php' = process list
  *
  * @global string $cfg['DefaultTabServer']
  */
@@ -2638,7 +2641,6 @@ $cfg['SaveDir'] = '';
 
 /**
  * Directory where phpMyAdmin can save temporary files.
- * This is needed for MS Excel export, see documentation how to enable that.
  *
  * @global string $cfg['TempDir']
  */

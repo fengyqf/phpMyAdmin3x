@@ -54,7 +54,7 @@ if (! strlen($GLOBALS['db'])) {
 } else {
     $_GET['db'] = $GLOBALS['db'];
     $_GET['table'] = $GLOBALS['table'];
-    $main_target = isset($GLOBALS['goto']) ? $GLOBALS['goto'] : $GLOBALS['cfg']['DefaultTabTable'];
+    $main_target = ! empty($GLOBALS['goto']) ? $GLOBALS['goto'] : $GLOBALS['cfg']['DefaultTabTable'];
 }
 
 $url_query = PMA_generate_common_url($_GET);
@@ -71,8 +71,7 @@ $lang_iso_code = $GLOBALS['available_languages'][$GLOBALS['lang']][1];
 // start output
 require './libraries/header_http.inc.php';
 ?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN"
-    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">
+<!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml"
     xml:lang="<?php echo $lang_iso_code; ?>"
     lang="<?php echo $lang_iso_code; ?>"
@@ -132,7 +131,7 @@ require './libraries/header_http.inc.php';
 // ]]>
 </script>
 <?php
-echo PMA_includeJS('jquery/jquery-1.6.2.js');
+echo PMA_includeJS('jquery/jquery-1.6.2+fix-9521.js');
 echo PMA_includeJS('update-location.js');
 echo PMA_includeJS('common.js');
 ?>

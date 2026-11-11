@@ -32,6 +32,13 @@
  */
 
 /**
+ * block attempts to directly run this script 
+ */
+if (getcwd() == dirname(__FILE__)) {
+    die('Attack stopped');
+}
+
+/**
  * Minimum PHP version; can't call PMA_fatalError() which uses a
  * PHP 5 function, so cannot easily localize this message.
  */
@@ -45,6 +52,11 @@ if (version_compare(PHP_VERSION, '5.2.0', 'lt')) {
 if (!defined('E_DEPRECATED')) {
     define('E_DEPRECATED', 8192);
 }
+
+/**
+ * for verification in all procedural scripts under libraries
+ */
+define('PHPMYADMIN', true);
 
 /**
  * the error handler
@@ -75,14 +87,9 @@ if (version_compare(phpversion(), '5.3', 'lt')) {
 if (version_compare(phpversion(), '5.4', 'lt')) {
     /**
      * Avoid problems with magic_quotes_runtime
-     */ 
+     */
     @ini_set('magic_quotes_runtime', false);
 }
-
-/**
- * for verification in all procedural scripts under libraries
- */
-define('PHPMYADMIN', true);
 
 /**
  * core functions
@@ -335,11 +342,26 @@ if (isset($_COOKIE)
  * check HTTPS connection
  */
 if ($GLOBALS['PMA_Config']->get('ForceSSL')
-  && !$GLOBALS['PMA_Config']->get('is_https')) {
-    PMA_sendHeaderLocation(
-        preg_replace('/^http/', 'https',
-            $GLOBALS['PMA_Config']->get('PmaAbsoluteUri'))
-        . PMA_generate_common_url($_GET, 'text'));
+    && ! $GLOBALS['PMA_Config']->get('is_https')
+) {
+    // grab current URL
+    $url = $GLOBALS['PMA_Config']->get('PmaAbsoluteUri');
+    // Parse current URL
+    $parsed = parse_url($url);
+    // In case parsing has failed do stupid string replacement
+    if ($parsed === false) {
+        // Replace http protocol
+        $url = preg_replace('@^http:@', 'https:', $url);
+    } else {
+        if($GLOBALS['PMA_Config']->get('SSLPort')) {
+            $port_number = $GLOBALS['PMA_Config']->get('SSLPort');
+        } else {
+            $port_number = 443;
+        }
+        $url = 'https://' . $parsed['host'] . ':' . $port_number . $parsed['path'];
+    }
+    // Actually redirect
+    PMA_sendHeaderLocation($url . PMA_generate_common_url($_GET, 'text'));
     // delete the current session, otherwise we get problems (see bug #2397877)
     $GLOBALS['PMA_Config']->removeCookie($GLOBALS['session_name']);
     exit;
@@ -402,7 +424,6 @@ $goto_whitelist = array(
     'server_export.php',
     'server_import.php',
     'server_privileges.php',
-    'server_processlist.php',
     'server_sql.php',
     'server_status.php',
     'server_variables.php',
@@ -564,7 +585,7 @@ $_REQUEST['js_frame'] = PMA_ifSetOr($_REQUEST['js_frame'], '');
  * @global array $js_include
  */
 $GLOBALS['js_include'] = array();
-$GLOBALS['js_include'][] = 'jquery/jquery-1.6.2.js';
+$GLOBALS['js_include'][] = 'jquery/jquery-1.6.2+fix-9521.js';
 $GLOBALS['js_include'][] = 'jquery/jquery-ui-1.8.16.custom.js';
 $GLOBALS['js_include'][] = 'update-location.js';
 
@@ -603,6 +624,8 @@ require './libraries/select_lang.lib.php';
  * check for errors occurred while loading configuration
  * this check is done here after loading language files to present errors in locale
  */
+$GLOBALS['PMA_Config']->checkPermissions();
+
 if ($GLOBALS['PMA_Config']->error_config_file) {
     $error = '<h1>' . __('Failed to read configuration file') . '</h1>'
         . _('This usually means there is a syntax error in it, please check any errors shown below.')
@@ -811,7 +834,11 @@ if (! defined('PMA_MINIMUM_COMMON')) {
      * @todo should be done in PMA_Config
      */
     $GLOBALS['PMA_Config']->setCookie('pma_lang', $GLOBALS['lang']);
-    $GLOBALS['PMA_Config']->setCookie('pma_collation_connection', $GLOBALS['collation_connection']);
+    if (isset($GLOBALS['collation_connection'])) {
+        $GLOBALS['PMA_Config']->setCookie(
+            'pma_collation_connection',
+            $GLOBALS['collation_connection']);
+    }
 
     $_SESSION['PMA_Theme_Manager']->setThemeCookie();
 

@@ -19,6 +19,7 @@ $GLOBALS['js_include'][] = 'jquery/timepicker.js';
 $GLOBALS['js_include'][] = 'tbl_change.js';
 // the next one needed because sql.php may do a "goto" to tbl_structure.php
 $GLOBALS['js_include'][] = 'tbl_structure.js';
+$GLOBALS['js_include'][] = 'indexes.js';
 $GLOBALS['js_include'][] = 'gis_data_editor.js';
 $GLOBALS['js_include'][] = 'codemirror/lib/codemirror.js';
 $GLOBALS['js_include'][] = 'codemirror/mode/mysql/mysql.js';
@@ -26,14 +27,12 @@ $GLOBALS['js_include'][] = 'codemirror/mode/mysql/mysql.js';
 
 
 if (isset($_SESSION['profiling'])) {
-    $GLOBALS['js_include'][] = 'highcharts/highcharts.js';
-    /* Files required for chart exporting */
-    $GLOBALS['js_include'][] = 'highcharts/exporting.js';
     /* < IE 9 doesn't support canvas natively */
     if (PMA_USR_BROWSER_AGENT == 'IE' && PMA_USR_BROWSER_VER < 9) {
         $GLOBALS['js_include'][] = 'canvg/flashcanvas.js';
     }
-    $GLOBALS['js_include'][] = 'canvg/canvg.js';
+    $GLOBALS['js_include'][] = 'jqplot/jquery.jqplot.js';
+    $GLOBALS['js_include'][] = 'jqplot/plugins/jqplot.pieRenderer.js';
 }
 
 /**
@@ -126,13 +125,11 @@ if (isset($_REQUEST['get_enum_values']) && $_REQUEST['get_enum_values'] == true)
 
     $field_info_result = PMA_DBI_fetch_result($field_info_query, null, null, null, PMA_DBI_QUERY_STORE);
 
-    $search = array('enum', '(', ')', "'");
-
-    $values = explode(',', str_replace($search, '', $field_info_result[0]['Type']));
+    $values = PMA_parseEnumSetValues($field_info_result[0]['Type']);
 
     $dropdown = '<option value="">&nbsp;</option>';
     foreach ($values as $value) {
-        $dropdown .= '<option value="' . htmlspecialchars($value) . '"';
+        $dropdown .= '<option value="' . $value . '"';
         if ($value == $_REQUEST['curr_value']) {
             $dropdown .= ' selected="selected"';
         }
@@ -155,12 +152,11 @@ if (isset($_REQUEST['get_set_values']) && $_REQUEST['get_set_values'] == true) {
 
     $selected_values = explode(',', $_REQUEST['curr_value']);
 
-    $search = array('set', '(', ')', "'");
-    $values = explode(',', str_replace($search, '', $field_info_result[0]['Type']));
+    $values = PMA_parseEnumSetValues($field_info_result[0]['Type']);
 
     $select = '';
     foreach ($values as $value) {
-        $select .= '<option value="' . htmlspecialchars($value) . '"';
+        $select .= '<option value="' . $value . '"';
         if (in_array($value, $selected_values, true)) {
             $select .= ' selected="selected"';
         }
@@ -435,7 +431,7 @@ if ($GLOBALS['cfg']['RememberSorting']
             // retrieve the remembered sorting order for current table
             $sql_order_to_append = ' ORDER BY ' . $sorted_col . ' ';
             $full_sql_query = $analyzed_sql[0]['section_before_limit'] . $sql_order_to_append
-                . $analyzed_sql[0]['section_after_limit'];
+                . $analyzed_sql[0]['limit_clause'] . ' ' . $analyzed_sql[0]['section_after_limit'];
 
             // update the $analyzed_sql
             $analyzed_sql[0]['section_before_limit'] .= $sql_order_to_append;
@@ -906,14 +902,16 @@ $(document).ready(makeProfilingChart);
             echo ' <tr>' .  "\n";
             echo '<td>' . ucwords($one_result['Status']) . '</td>' .  "\n";
             echo '<td align="right">' . (PMA_formatNumber($one_result['Duration'], 3, 1)) . 's</td>' .  "\n";
-            $chart_json[ucwords($one_result['Status'])] = $one_result['Duration'];
+            if (isset($chart_json[ucwords($one_result['Status'])])) {
+                $chart_json[ucwords($one_result['Status'])] += $one_result['Duration'];
+            } else {
+                $chart_json[ucwords($one_result['Status'])] = $one_result['Duration'];
+            }
         }
 
         echo '</table>' . "\n";
         echo '</div>';
-        //require_once './libraries/chart.lib.php';
         echo '<div id="profilingchart" style="display:none;">';
-        //PMA_chart_profiling($profiling_results);
         echo json_encode($chart_json);
         echo '</div>';
         echo '</fieldset>' . "\n";
